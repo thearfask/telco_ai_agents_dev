@@ -1,0 +1,75 @@
+version: "1.0"
+
+agents:
+
+  telemetry:
+    name: "Telemetry Investigator"
+    version: "1.0"
+
+    enabled: true
+
+    prompt_file: "prompts/telemetry.md"
+
+    tools:
+      - get_window_health
+      - get_telemetry_detail
+
+    activation:
+      requires:
+        - window_id
+
+    execution:
+      max_tool_calls: 2
+      max_input_tokens: 1800
+      max_output_tokens: 600
+      timeout_seconds: 30
+
+    output_schema: domain_findings_v1
+
+
+  alarms:
+    name: "Alarm Investigator"
+    version: "1.0"
+
+    enabled: true
+
+    prompt_file: "prompts/alarms.md"
+
+    tools:
+      - get_alarms
+
+    activation:
+      requires:
+        - window_id
+
+    execution:
+      max_tool_calls: 1
+      max_input_tokens: 1000
+      max_output_tokens: 450
+      timeout_seconds: 20
+
+    output_schema: domain_findings_v1
+
+
+  topology:
+    name: "Topology Investigator"
+    version: "1.0"
+
+    enabled: true
+
+    prompt_file: "prompts/topology.md"
+
+    tools:
+      - get_topology
+
+    activation:
+      requires:
+        - window_id
+
+    execution:
+      max_tool_calls: 1
+      max_input_tokens: 800
+      max_output_tokens: 400
+      timeout_seconds: 20
+
+    output_schema: domain_findings_v1

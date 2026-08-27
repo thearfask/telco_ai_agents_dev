@@ -1,0 +1,145 @@
+version: "1.0"
+
+tools:
+
+  get_window_health:
+    name: "Get Window Health"
+    description: >
+      Returns summarized telemetry health and component context
+      for a TelecomTS observation window.
+
+    version: "1.0"
+    enabled: true
+    category: telemetry
+
+    implementation:
+      telco_ai_investigator_v1.tools:get_window_health
+
+    required_scope: telemetry:read
+
+    limits:
+      max_records: 1
+      timeout_ms: 3000
+
+    tags:
+      - summary
+      - preferred
+      - cheap
+
+
+  get_telemetry_detail:
+
+    name: "Get Telemetry Detail"
+
+    description: >
+      Returns bounded sample-level KPI telemetry.
+
+      Supported metrics are exactly:
+      RSRP,
+      DL_BLER,
+      DL_MCS,
+      UL_BLER,
+      UL_MCS,
+      UL_NPRB,
+      UL_SNR,
+      TX_Bytes,
+      RX_Bytes,
+      Estimated_UL_Buffer,
+      PRBs_DL_Current,
+      PRBs_UL_Current,
+      PRB_Utilization_DL,
+      PRB_Utilization_UL,
+      UL_Protocol,
+      UL_NumberOfPackets,
+      DL_Protocol,
+      DL_NumberOfPackets.
+
+      Do not request metrics outside this list.
+
+    version: "1.0"
+    enabled: true
+
+    category: telemetry
+
+    implementation:
+      telco_ai_investigator_v1.tools:get_telemetry_detail
+
+    required_scope: telemetry:read
+
+    limits:
+      max_records: 25
+      timeout_ms: 5000
+
+    tags:
+      - detail
+      - drilldown
+
+
+  get_alarms:
+    name: "Get Alarms"
+    description: >
+      Returns alarms associated with a telemetry observation window.
+
+    version: "1.0"
+    enabled: true
+    category: alarms
+
+    implementation:
+      telco_ai_investigator_v1.tools:get_alarms
+
+    required_scope: alarms:read
+
+    limits:
+      max_records: 25
+      timeout_ms: 3000
+
+    tags:
+      - alarms
+      - operational
+
+
+  get_topology:
+    name: "Get Topology"
+    description: >
+      Resolves the network dependency path associated with a
+      telemetry observation window.
+
+    version: "1.0"
+    enabled: true
+    category: topology
+
+    implementation:
+      telco_ai_investigator_v1.tools:get_topology
+
+    required_scope: topology:read
+
+    limits:
+      max_records: 20
+      timeout_ms: 3000
+
+    tags:
+      - topology
+      - dependencies
+
+  run_select_queries:
+    name: "Run Select on telemetry"
+    description: >
+      Resolves the network dependency path associated with a
+      telemetry observation window.
+
+    version: "1.0"
+    enabled: true
+    category: topology
+
+    implementation:
+      telco_ai_investigator_v1.tools:get_topology
+
+    required_scope: topology:read
+
+    limits:
+      max_records: 20
+      timeout_ms: 3000
+
+    tags:
+      - topology
+      - dependencies
