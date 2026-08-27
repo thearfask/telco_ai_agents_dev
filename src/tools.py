@@ -1,37 +1,37 @@
 from __future__ import annotations
 
 import json
-import re
-from contextvars import ContextVar
 from pathlib import Path
 from typing import Any
 
 import duckdb
 
 from langchain_core.tools import tool
-from langchain_openai import ChatOpenAI
-
 from pydantic import BaseModel
 
-from prompts import (
-    SQL_PLANNER_PROMPT,
-    SQL_REPAIR_PROMPT,
+from sqlglot import (
+    exp,
+    parse,
+)
+from sqlglot.errors import (
+    ParseError,
 )
 
+from config import get_runtime_config
+from intelligence import (
+    find_patterns,
+    resolve_metrics,
+    search_runbooks,
+)
+from llm import get_llm
+from prompts import SQL_REPAIR_PROMPT
 
-# ============================================================
-# PATHS
-# ============================================================
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
-DB_FILE = PROJECT_ROOT / "telco.duckdb"
-
-KNOWLEDGE_FILE = (
+DB_FILE = (
     PROJECT_ROOT
-    / "config"
-    / "kpi_reference.md"
+    / "telco.duckdb"
 )
 
 LOG_FILE = (
@@ -47,73 +47,15 @@ TOPOLOGY_FILE = (
 )
 
 
-MODEL = "gpt-5.4-nano"
-
-MAX_RESULT_ROWS = 100
-
-
-# ============================================================
-# RUNTIME CREDENTIAL
-#
-# Never enters LangGraph investigation state.
-# ============================================================
-
-
-_API_KEY: ContextVar[str | None] = ContextVar(
-    "openai_api_key",
-    default=None,
-)
-
-
-def set_runtime_api_key(
-    api_key: str,
-) -> None:
-    _API_KEY.set(api_key)
-
-
-def get_runtime_api_key() -> str:
-    api_key = _API_KEY.get()
-
-    if not api_key:
-        raise RuntimeError(
-            "OpenAI API key is not configured for this runtime."
-        )
-
-    return api_key
+TELEMETRY_TABLES = {
+    "telemetry_windows",
+    "telemetry_summary",
+    "telemetry_measurements",
+}
 
 
 # ============================================================
-# LLM
-# ============================================================
-
-
-def create_llm(
-    *,
-    max_completion_tokens: int = 1600,
-) -> ChatOpenAI:
-    return ChatOpenAI(
-        model=MODEL,
-        api_key=get_runtime_api_key(),
-        temperature=0,
-        reasoning_effort="low",
-        max_completion_tokens=max_completion_tokens,
-        use_responses_api=True,
-    )
-
-
-# ============================================================
-# SQL MODELS
-# ============================================================
-
-
-class SQLPlan(BaseModel):
-    can_answer: bool
-    sql: str | None = None
-    reason: str | None = None
-
-
-# ============================================================
-# DATABASE
+# DB
 # ============================================================
 
 
@@ -129,28 +71,28 @@ def _connect():
     )
 
 
-# ============================================================
-# SCHEMA
-# ============================================================
-
-
 def get_schema(
     allowed_tables: set[str],
 ) -> str:
+
     con = _connect()
 
     try:
-        existing_tables = {
+
+        existing = {
             row[0]
             for row in con.execute(
                 "SHOW TABLES"
             ).fetchall()
         }
 
-        parts = []
+        sections = []
 
-        for table in sorted(allowed_tables):
-            if table not in existing_tables:
+        for table in sorted(
+            allowed_tables
+        ):
+
+            if table not in existing:
                 continue
 
             rows = con.execute(
@@ -162,216 +104,280 @@ def get_schema(
                 for row in rows
             ]
 
-            parts.append(
+            sections.append(
                 f"{table}("
-                + ", ".join(columns)
+                + ", ".join(
+                    columns
+                )
                 + ")"
             )
 
-        return "\n".join(parts)
+        return "\n".join(
+            sections
+        )
 
     finally:
         con.close()
 
 
 # ============================================================
-# SQL GENERATION
+# SQL AST VALIDATION
 # ============================================================
 
 
-def _sql_model():
-    return create_llm(
-        max_completion_tokens=1600,
-    ).with_structured_output(
-        SQLPlan,
-        method="json_schema",
+FORBIDDEN_NODES = (
+    exp.Insert,
+    exp.Update,
+    exp.Delete,
+    exp.Drop,
+    exp.Create,
+    exp.Alter,
+    exp.Command,
+)
+
+
+def parse_sql(
+    sql: str,
+) -> exp.Expression:
+
+    if not sql.strip():
+        raise ValueError(
+            "SQL is empty."
+        )
+
+    try:
+
+        trees = parse(
+            sql,
+            read="duckdb",
+        )
+
+    except ParseError as exc:
+
+        raise ValueError(
+            f"Invalid DuckDB SQL: {exc}"
+        ) from exc
+
+    if len(trees) != 1:
+        raise ValueError(
+            "Exactly one SQL statement is allowed."
+        )
+
+    tree = trees[0]
+
+    if tree is None:
+        raise ValueError(
+            "SQL parser returned no statement."
+        )
+
+    return tree
+
+
+def _cte_names(
+    tree: exp.Expression,
+) -> set[str]:
+
+    return {
+        cte.alias_or_name.lower()
+        for cte in tree.find_all(
+            exp.CTE
+        )
+        if cte.alias_or_name
+    }
+
+
+def _physical_tables(
+    tree: exp.Expression,
+) -> set[str]:
+
+    ctes = _cte_names(
+        tree
     )
 
+    tables = set()
 
-def generate_sql(
-    *,
-    question: str,
-    schema: str,
-) -> SQLPlan:
-    prompt = f"""
-{SQL_PLANNER_PROMPT}
+    for table in tree.find_all(
+        exp.Table
+    ):
 
-DATABASE SCHEMA|
-{schema}
+        name = (
+            table.name
+            .strip()
+            .lower()
+        )
 
-QUESTION|
-{question}
-"""
+        if (
+            name
+            and name not in ctes
+        ):
+            tables.add(
+                name
+            )
 
-    return _sql_model().invoke(prompt)
-
-
-def repair_sql(
-    *,
-    question: str,
-    schema: str,
-    failed_sql: str,
-    database_error: str,
-) -> SQLPlan:
-    prompt = f"""
-{SQL_REPAIR_PROMPT}
-
-DATABASE SCHEMA|
-{schema}
-
-ORIGINAL QUESTION|
-{question}
-
-FAILED SQL|
-{failed_sql}
-
-DUCKDB ERROR|
-{database_error}
-"""
-
-    return _sql_model().invoke(prompt)
-
-
-# ============================================================
-# SQL SAFETY
-# ============================================================
-
-
-FORBIDDEN_KEYWORDS = {
-    "insert",
-    "update",
-    "delete",
-    "drop",
-    "alter",
-    "create",
-    "attach",
-    "detach",
-    "copy",
-    "export",
-    "import",
-    "truncate",
-    "pragma",
-    "call",
-}
+    return tables
 
 
 def validate_sql(
-    *,
     sql: str,
     allowed_tables: set[str],
+    required_window_ids: list[str] | None = None,
 ) -> str:
-    if not sql:
-        raise ValueError("Empty SQL query.")
 
-    cleaned = sql.strip().rstrip(";")
-    lowered = cleaned.lower()
+    tree = parse_sql(
+        sql
+    )
 
-    if not (
-        lowered.startswith("select")
-        or lowered.startswith("with")
+    for node_type in (
+        FORBIDDEN_NODES
+    ):
+        if tree.find(
+            node_type
+        ):
+            raise ValueError(
+                "Read-only SQL required. "
+                f"Forbidden node: {node_type.__name__}"
+            )
+
+    if not isinstance(
+        tree,
+        (
+            exp.Select,
+            exp.Union,
+            exp.Intersect,
+            exp.Except,
+        ),
     ):
         raise ValueError(
             "Only SELECT queries are allowed."
         )
 
-    if ";" in cleaned:
-        raise ValueError(
-            "Multiple SQL statements are not allowed."
-        )
-
-    for keyword in FORBIDDEN_KEYWORDS:
-        if re.search(
-            rf"\b{keyword}\b",
-            lowered,
-        ):
-            raise ValueError(
-                f"Forbidden SQL keyword: {keyword}"
-            )
-
-    cte_names = {
-        name.lower()
-        for name in re.findall(
-            r"(?:WITH|,)\s*"
-            r"([a-zA-Z_][a-zA-Z0-9_]*)"
-            r"\s+AS\s*\(",
-            cleaned,
-            flags=re.IGNORECASE,
-        )
-    }
-
-    referenced_tables = set()
-
-    for match in re.finditer(
-        r'\b(?:FROM|JOIN)\s+'
-        r'(?:"([a-zA-Z_][a-zA-Z0-9_]*)"'
-        r'|([a-zA-Z_][a-zA-Z0-9_]*))',
-        cleaned,
-        flags=re.IGNORECASE,
-    ):
-        table = (
-            match.group(1)
-            or match.group(2)
-        )
-
-        if table:
-            referenced_tables.add(
-                table.lower()
-            )
-
-    physical_tables = (
-        referenced_tables
-        - cte_names
+    tables = _physical_tables(
+        tree
     )
 
-    allowed_lower = {
+    allowed = {
         table.lower()
         for table in allowed_tables
     }
 
-    invalid = (
-        physical_tables
-        - allowed_lower
+    unauthorized = (
+        tables
+        - allowed
     )
 
-    if invalid:
+    if unauthorized:
         raise ValueError(
             "Unauthorized table(s): "
-            + ", ".join(sorted(invalid))
+            + ", ".join(
+                sorted(
+                    unauthorized
+                )
+            )
         )
 
-    return cleaned
+    required_window_ids = (
+        required_window_ids
+        or []
+    )
+
+    if required_window_ids:
+
+        literals = {
+            str(
+                literal.this
+            ).upper()
+            for literal in tree.find_all(
+                exp.Literal
+            )
+            if literal.is_string
+        }
+
+        missing = {
+            window.upper()
+            for window
+            in required_window_ids
+            if window.upper()
+            not in literals
+        }
+
+        if missing:
+            raise ValueError(
+                "SQL dropped required "
+                "window scope: "
+                + ", ".join(
+                    sorted(
+                        missing
+                    )
+                )
+            )
+
+        # If telemetry measurements are used,
+        # window_id must appear in the AST.
+        if (
+            "telemetry_measurements"
+            in tables
+        ):
+
+            columns = {
+                column.name.lower()
+                for column
+                in tree.find_all(
+                    exp.Column
+                )
+                if column.name
+            }
+
+            if (
+                "window_id"
+                not in columns
+            ):
+                raise ValueError(
+                    "telemetry_measurements must "
+                    "be directly scoped by window_id."
+                )
+
+    return tree.sql(
+        dialect="duckdb",
+        pretty=True,
+    )
 
 
 def validate_with_duckdb(
     sql: str,
 ) -> None:
+
     con = _connect()
 
     try:
         con.execute(
             f"EXPLAIN {sql}"
         )
+
     finally:
         con.close()
-
-
-# ============================================================
-# SQL EXECUTION
-# ============================================================
 
 
 def execute_sql(
     sql: str,
 ) -> dict[str, Any]:
+
+    max_rows = int(
+        get_runtime_config().get(
+            "max_sql_result_rows",
+            150,
+        )
+    )
+
     con = _connect()
 
     try:
+
         bounded_sql = f"""
         SELECT *
         FROM (
             {sql}
-        ) AS final_query
-        LIMIT {MAX_RESULT_ROWS}
+        ) AS bounded_result
+        LIMIT {max_rows}
         """
 
         result = con.execute(
@@ -379,8 +385,9 @@ def execute_sql(
         )
 
         columns = [
-            column[0]
-            for column in result.description
+            item[0]
+            for item
+            in result.description
         ]
 
         rows = result.fetchall()
@@ -388,341 +395,473 @@ def execute_sql(
         return {
             "columns": columns,
             "rows": [
-                dict(zip(columns, row))
+                dict(
+                    zip(
+                        columns,
+                        row,
+                    )
+                )
                 for row in rows
             ],
-            "row_count": len(rows),
+            "row_count": len(
+                rows
+            ),
+            "truncated_at": (
+                max_rows
+                if len(rows)
+                >= max_rows
+                else None
+            ),
         }
 
     finally:
         con.close()
 
 
-def sql_tool(
+# ============================================================
+# SQL REPAIR
+# ============================================================
+
+
+class SQLRepairResult(BaseModel):
+
+    can_answer: bool
+
+    sql: str | None = None
+
+    reason: str | None = None
+
+
+def repair_sql(
     *,
-    question: str,
+    purpose: str,
+    original_sql: str,
+    error: str,
+    schema: str,
+    window_ids: list[str],
+) -> SQLRepairResult:
+
+    model = (
+        get_llm(
+            "sql"
+        )
+        .with_structured_output(
+            SQLRepairResult,
+            method="json_schema",
+        )
+    )
+
+    prompt = f"""
+{SQL_REPAIR_PROMPT}
+
+EVIDENCE GOAL|
+{purpose}
+
+REQUIRED WINDOW IDS|
+{window_ids}
+
+ALLOWED SCHEMA|
+{schema}
+
+FAILED SQL|
+{original_sql}
+
+ERROR|
+{error}
+"""
+
+    return model.invoke(
+        prompt
+    )
+
+
+def run_guarded_sql(
+    *,
+    sql: str,
+    purpose: str,
     allowed_tables: set[str],
-) -> dict[str, Any]:
-    try:
-        schema = get_schema(
-            allowed_tables
-        )
-    except Exception as exc:
-        return {
-            "status": "failed",
-            "stage": "schema",
-            "error": str(exc),
-        }
+    window_ids: list[str],
+) -> dict:
 
-    if not schema:
-        return {
-            "status": "unsupported",
-            "reason": (
-                "None of the requested tables exist "
-                "in the current DuckDB database."
+    schema = get_schema(
+        allowed_tables
+    )
+
+    try:
+
+        validated = validate_sql(
+            sql,
+            allowed_tables,
+            required_window_ids=(
+                window_ids
             ),
-        }
-
-    try:
-        plan = generate_sql(
-            question=question,
-            schema=schema,
-        )
-    except Exception as exc:
-        return {
-            "status": "failed",
-            "stage": "generation",
-            "error": str(exc),
-        }
-
-    if not plan.can_answer:
-        return {
-            "status": "unsupported",
-            "reason": (
-                plan.reason
-                or "The available schema cannot answer this question."
-            ),
-        }
-
-    if not plan.sql:
-        return {
-            "status": "failed",
-            "stage": "generation",
-            "error": "SQL planner returned no SQL.",
-        }
-
-    original_sql = plan.sql
-
-    try:
-        validated_sql = validate_sql(
-            sql=original_sql,
-            allowed_tables=allowed_tables,
         )
 
         validate_with_duckdb(
-            validated_sql
+            validated
         )
 
-        repair_used = False
+        result = execute_sql(
+            validated
+        )
+
+        return {
+            "status": "completed",
+            "repair_used": False,
+            "sql": validated,
+            "result": result,
+        }
 
     except Exception as first_error:
+
+        repair_limit = int(
+            get_runtime_config().get(
+                "max_sql_repair_attempts",
+                1,
+            )
+        )
+
+        if repair_limit < 1:
+
+            return {
+                "status": "failed",
+                "error": str(
+                    first_error
+                ),
+                "repair_used": False,
+            }
+
         try:
+
             repaired = repair_sql(
-                question=question,
+                purpose=purpose,
+                original_sql=sql,
+                error=str(
+                    first_error
+                ),
                 schema=schema,
-                failed_sql=original_sql,
-                database_error=str(first_error),
+                window_ids=(
+                    window_ids
+                ),
             )
 
             if (
                 not repaired.can_answer
                 or not repaired.sql
             ):
+
                 return {
                     "status": "failed",
-                    "stage": "repair",
-                    "sql": original_sql,
-                    "error": str(first_error),
+                    "error": str(
+                        first_error
+                    ),
+                    "repair_used": True,
+                    "repair_reason": (
+                        repaired.reason
+                    ),
                 }
 
-            validated_sql = validate_sql(
-                sql=repaired.sql,
-                allowed_tables=allowed_tables,
+            validated = validate_sql(
+                repaired.sql,
+                allowed_tables,
+                required_window_ids=(
+                    window_ids
+                ),
             )
 
             validate_with_duckdb(
-                validated_sql
+                validated
             )
 
-            repair_used = True
+            result = execute_sql(
+                validated
+            )
 
-        except Exception as second_error:
             return {
-                "status": "failed",
-                "stage": "validation_after_repair",
-                "sql": original_sql,
-                "error": str(second_error),
+                "status": "completed",
                 "repair_used": True,
+                "sql": validated,
+                "result": result,
             }
 
-    try:
-        result = execute_sql(
-            validated_sql
-        )
-    except Exception as exc:
-        return {
-            "status": "failed",
-            "stage": "execution",
-            "sql": validated_sql,
-            "error": str(exc),
-            "repair_used": repair_used,
-        }
+        except Exception as repair_error:
 
-    return {
-        "status": "completed",
-        "sql": validated_sql,
-        "repair_used": repair_used,
-        "result": result,
-    }
+            return {
+                "status": "failed",
+                "repair_used": True,
+                "initial_error": str(
+                    first_error
+                ),
+                "repair_error": str(
+                    repair_error
+                ),
+            }
 
 
 # ============================================================
-# KNOWLEDGE SEARCH
-#
-# This is NOT vector RAG yet.
-# It searches the real project knowledge document.
+# TELEMETRY AGENT TOOLS
 # ============================================================
 
 
-def search_knowledge_raw(
+@tool
+def telemetry_schema() -> str:
+    """
+    Return the physical telemetry tables and columns currently
+    available in DuckDB.
+
+    Use for schema discovery.
+    Do not use SQL for schema discovery.
+    """
+
+    return get_schema(
+        TELEMETRY_TABLES
+    )
+
+
+@tool
+def telemetry_metrics(
+    concepts: list[str],
+) -> str:
+    """
+    Resolve engineering concepts into authoritative telemetry metrics.
+
+    Use when you know the engineering evidence required but need the
+    correct physical metric and its semantics.
+
+    This is knowledge, not incident evidence.
+    """
+
+    return json.dumps(
+        resolve_metrics(
+            concepts
+        ),
+        default=str,
+    )
+
+
+@tool
+def telemetry_patterns(
     query: str,
-    top_k: int = 4,
-) -> dict:
-    if not KNOWLEDGE_FILE.exists():
-        return {
-            "status": "unavailable",
-            "reason": (
-                f"Knowledge file not found: "
-                f"{KNOWLEDGE_FILE}"
+) -> str:
+    """
+    Retrieve compact diagnostic patterns for competing telemetry
+    hypotheses.
+
+    Use when multiple mechanisms could explain the incident and you
+    need evidence that supports or contradicts them.
+
+    This is knowledge, not incident evidence.
+    """
+
+    return json.dumps(
+        find_patterns(
+            query=query,
+            domain="telemetry",
+            top_k=3,
+        ),
+        default=str,
+    )
+
+
+@tool
+def telemetry_runbook(
+    query: str,
+) -> str:
+    """
+    Retrieve deeper telemetry troubleshooting guidance.
+
+    Use only when procedural engineering guidance is genuinely needed.
+
+    This is knowledge, not incident evidence.
+    """
+
+    return json.dumps(
+        search_runbooks(
+            query=query,
+            domain="telemetry",
+            top_k=3,
+        ),
+        default=str,
+    )
+
+
+@tool
+def telemetry_sql(
+    purpose: str,
+    sql: str,
+    window_ids: list[str],
+) -> str:
+    """
+    Retrieve actual operational telemetry evidence.
+
+    Provide one focused read-only DuckDB query.
+
+    The tool automatically:
+    - parses SQL with SQLGlot;
+    - enforces allowed tables;
+    - enforces window scope;
+    - validates with DuckDB;
+    - performs one bounded repair attempt when necessary.
+
+    Do not use for schema discovery.
+    """
+
+    return json.dumps(
+        run_guarded_sql(
+            sql=sql,
+            purpose=purpose,
+            allowed_tables=(
+                TELEMETRY_TABLES
             ),
-            "results": [],
-        }
-
-    text = KNOWLEDGE_FILE.read_text(
-        encoding="utf-8"
+            window_ids=(
+                window_ids
+            ),
+        ),
+        default=str,
     )
 
-    sections = re.split(
-        r"\n(?=#{1,4}\s)",
-        text,
-    )
 
-    query_tokens = set(
-        re.findall(
-            r"[a-z0-9_]+",
-            query.lower(),
-        )
-    )
-
-    scored = []
-
-    for section in sections:
-        section = section.strip()
-
-        if not section:
-            continue
-
-        tokens = set(
-            re.findall(
-                r"[a-z0-9_]+",
-                section.lower(),
-            )
-        )
-
-        score = len(
-            query_tokens & tokens
-        )
-
-        if score:
-            scored.append(
-                (score, section)
-            )
-
-    scored.sort(
-        key=lambda item: item[0],
-        reverse=True,
-    )
-
-    top_k = max(
-        1,
-        min(int(top_k), 5),
-    )
-
-    results = [
-        {
-            "source": str(KNOWLEDGE_FILE),
-            "score": score,
-            "content": section[:2500],
-        }
-        for score, section
-        in scored[:top_k]
-    ]
-
-    return {
-        "status": "completed",
-        "retrieval_type": "keyword",
-        "results": results,
-    }
+TELEMETRY_TOOLS = [
+    telemetry_patterns,
+    telemetry_metrics,
+    telemetry_runbook,
+    telemetry_schema,
+    telemetry_sql,
+]
 
 
 # ============================================================
-# LOG SEARCH
+# ALARM TOOL
 # ============================================================
 
 
-def search_logs_raw(
+@tool
+def alarm_logs(
     query: str,
     window_ids: list[str] | None = None,
-    limit: int = 15,
-) -> dict:
+) -> str:
+    """
+    Search operational alarm/log records when a local log dataset exists.
+    """
+
     if not LOG_FILE.exists():
-        return {
-            "status": "unavailable",
-            "reason": (
-                "No operational log dataset has been configured."
-            ),
-            "results": [],
-        }
 
-    query_tokens = set(
-        re.findall(
-            r"[a-z0-9_]+",
-            query.lower(),
+        return json.dumps(
+            {
+                "status": "unavailable",
+                "reason": (
+                    "Operational log dataset "
+                    "is not configured."
+                ),
+            }
         )
+
+    wanted = set(
+        window_ids
+        or []
     )
 
-    wanted_windows = set(
-        window_ids or []
-    )
+    query_terms = {
+        value.lower()
+        for value
+        in query.split()
+    }
 
-    matches = []
+    hits = []
 
     with LOG_FILE.open(
         "r",
         encoding="utf-8",
     ) as handle:
+
         for line in handle:
+
             try:
-                row = json.loads(line)
+                row = json.loads(
+                    line
+                )
             except Exception:
                 continue
 
             if (
-                wanted_windows
-                and row.get("window_id")
-                not in wanted_windows
+                wanted
+                and row.get(
+                    "window_id"
+                )
+                not in wanted
             ):
                 continue
 
             searchable = json.dumps(
-                row,
-                default=str,
+                row
             ).lower()
 
-            tokens = set(
-                re.findall(
-                    r"[a-z0-9_]+",
-                    searchable,
+            score = sum(
+                1
+                for term
+                in query_terms
+                if term in searchable
+            )
+
+            if score:
+                hits.append(
+                    (
+                        score,
+                        row,
+                    )
                 )
-            )
 
-            score = len(
-                query_tokens & tokens
-            )
-
-            if query_tokens and score == 0:
-                continue
-
-            matches.append(
-                (score, row)
-            )
-
-    matches.sort(
+    hits.sort(
         key=lambda item: item[0],
         reverse=True,
     )
 
-    rows = [
-        row
-        for _, row
-        in matches[:limit]
-    ]
+    return json.dumps(
+        {
+            "status": "completed",
+            "results": [
+                item[1]
+                for item
+                in hits[:30]
+            ],
+        },
+        default=str,
+    )
 
-    return {
-        "status": "completed",
-        "row_count": len(rows),
-        "results": rows,
-    }
+
+ALARM_TOOLS = [
+    alarm_logs,
+]
 
 
 # ============================================================
-# TOPOLOGY
+# TOPOLOGY TOOL
 # ============================================================
 
 
-def query_graph_raw(
+@tool
+def topology_graph(
     node_ids: list[str],
-) -> dict:
-    if not TOPOLOGY_FILE.exists():
-        return {
-            "status": "unavailable",
-            "reason": (
-                "No topology dataset has been configured."
-            ),
-            "results": [],
-        }
+) -> str:
+    """
+    Return observed topology relationships for supplied node IDs.
+    """
 
-    wanted = set(node_ids)
+    if not TOPOLOGY_FILE.exists():
+
+        return json.dumps(
+            {
+                "status": "unavailable",
+                "reason": (
+                    "Topology dataset "
+                    "is not configured."
+                ),
+            }
+        )
+
+    wanted = set(
+        node_ids
+    )
 
     results = []
 
@@ -730,120 +869,37 @@ def query_graph_raw(
         "r",
         encoding="utf-8",
     ) as handle:
+
         for line in handle:
+
             try:
-                row = json.loads(line)
+                row = json.loads(
+                    line
+                )
             except Exception:
                 continue
 
             if (
-                row.get("src") in wanted
-                or row.get("dst") in wanted
+                row.get("src")
+                in wanted
+                or row.get("dst")
+                in wanted
             ):
-                results.append(row)
-
-    return {
-        "status": "completed",
-        "results": results[:30],
-    }
-
-
-# ============================================================
-# LANGCHAIN TOOLS
-# ============================================================
-
-
-SQL_TABLES = {
-    "telemetry_windows",
-    "telemetry_summary",
-    "telemetry_measurements",
-    "alarms",
-    "alarm_events",
-    "topology_nodes",
-    "topology_edges",
-}
-
-
-@tool
-def query_sql(
-    question: str,
-) -> str:
-    """
-    Query structured operational data using read-only DuckDB SQL.
-    """
-    result = sql_tool(
-        question=question,
-        allowed_tables=SQL_TABLES,
-    )
+                results.append(
+                    row
+                )
 
     return json.dumps(
-        result,
+        {
+            "status": "completed",
+            "results": (
+                results[:30]
+            ),
+        },
         default=str,
-        separators=(",", ":"),
     )
 
 
-@tool
-def search_knowledge(
-    query: str,
-    top_k: int = 4,
-) -> str:
-    """
-    Search the project's engineering knowledge reference.
-    """
-    result = search_knowledge_raw(
-        query=query,
-        top_k=top_k,
-    )
-
-    return json.dumps(
-        result,
-        default=str,
-        separators=(",", ":"),
-    )
-
-
-@tool
-def search_logs(
-    query: str,
-    window_ids: list[str] | None = None,
-) -> str:
-    """
-    Search operational logs when a log dataset is available.
-    """
-    result = search_logs_raw(
-        query=query,
-        window_ids=window_ids,
-    )
-
-    return json.dumps(
-        result,
-        default=str,
-        separators=(",", ":"),
-    )
-
-
-@tool
-def query_graph(
-    node_ids: list[str],
-) -> str:
-    """
-    Query topology relationships when topology data is available.
-    """
-    result = query_graph_raw(
-        node_ids=node_ids,
-    )
-
-    return json.dumps(
-        result,
-        default=str,
-        separators=(",", ":"),
-    )
-
-
-COMMON_TOOLS = [
-    query_sql,
-    search_knowledge,
-    search_logs,
-    query_graph,
+TOPOLOGY_TOOLS = [
+    topology_graph,
 ]

@@ -1,9 +1,25 @@
 from __future__ import annotations
 
-from datetime import datetime
-from enum import Enum
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import (
+    BaseModel,
+    Field,
+)
+
+
+Confidence = Literal[
+    "LOW",
+    "MEDIUM",
+    "HIGH",
+]
+
+
+DomainName = Literal[
+    "telemetry",
+    "alarms",
+    "topology",
+]
 
 
 # ============================================================
@@ -12,46 +28,50 @@ from pydantic import BaseModel, Field
 
 
 class IncidentContext(BaseModel):
-    incident_id: str | None = None
-    title: str | None = None
-    priority: str | None = None
-    service: str | None = None
 
-    problem_statement: str = Field(max_length=800)
-    investigation_goal: str = Field(max_length=500)
-
-    symptoms: list[str] = Field(default_factory=list, max_length=10)
-
-    window_ids: list[str] = Field(default_factory=list, max_length=10)
-    component_ids: list[str] = Field(default_factory=list, max_length=10)
-    site_ids: list[str] = Field(default_factory=list, max_length=10)
-
-    region: str | None = None
-    zone: str | None = None
-
-    start_time: datetime | None = None
-    end_time: datetime | None = None
-
-    raw_text: str
-
-
-class IncidentObjective(BaseModel):
     incident_id: str | None = None
 
-    problem_statement: str = Field(max_length=800)
-    investigation_goal: str = Field(max_length=500)
+    problem_statement: str
 
-    symptoms: list[str] = Field(default_factory=list, max_length=8)
+    investigation_goal: str
 
-    window_ids: list[str] = Field(default_factory=list, max_length=10)
-    component_ids: list[str] = Field(default_factory=list, max_length=10)
-    site_ids: list[str] = Field(default_factory=list, max_length=10)
+    symptoms: list[str] = Field(
+        default_factory=list,
+        max_length=10,
+    )
+
+    window_ids: list[str] = Field(
+        default_factory=list,
+        max_length=10,
+    )
+
+    component_ids: list[str] = Field(
+        default_factory=list,
+        max_length=10,
+    )
+
+    site_ids: list[str] = Field(
+        default_factory=list,
+        max_length=10,
+    )
 
     region: str | None = None
+
     zone: str | None = None
 
-    start_time: datetime | None = None
-    end_time: datetime | None = None
+    start_time: str | None = None
+
+    end_time: str | None = None
+
+    explicit_hypotheses: list[str] = Field(
+        default_factory=list,
+        max_length=8,
+    )
+
+    constraints: list[str] = Field(
+        default_factory=list,
+        max_length=8,
+    )
 
 
 # ============================================================
@@ -59,158 +79,131 @@ class IncidentObjective(BaseModel):
 # ============================================================
 
 
-class EvidenceConfidence(str, Enum):
-    LOW = "LOW"
-    MEDIUM = "MEDIUM"
-    HIGH = "HIGH"
-
-
-class EvidenceKind(str, Enum):
-    OBSERVED = "observed"
-    KNOWLEDGE = "knowledge"
-    INFERRED = "inferred"
-
-
-class EvidenceSource(str, Enum):
-    SQL = "sql"
-    KNOWLEDGE = "knowledge"
-    LOG = "log"
-    GRAPH = "graph"
-    EXISTING = "existing"
-
-
-class EvidenceAvailability(str, Enum):
-    CURRENT = "current"
-    QUERYABLE = "queryable"
-    UNAVAILABLE = "unavailable"
-
-
 class EvidenceFact(BaseModel):
+
     fact_id: str
-    domain: str
 
-    statement: str = Field(max_length=320)
-    evidence: str = Field(max_length=450)
+    domain: DomainName
 
-    confidence: EvidenceConfidence
-    kind: EvidenceKind
+    statement: str
 
-    sources: list[EvidenceSource] = Field(
-        default_factory=list,
-        max_length=4,
-    )
+    confidence: Confidence
+
+    source_type: Literal[
+        "sql",
+        "log",
+        "graph",
+        "alarm",
+        "existing",
+    ]
+
+    source_ref: str | None = None
 
 
-class RuledOutHypothesis(BaseModel):
+class HypothesisVerdict(BaseModel):
+
     hypothesis_id: str
-    domain: str
 
-    hypothesis: str = Field(max_length=250)
-    reason: str = Field(max_length=350)
+    domain: DomainName
 
-    confidence: EvidenceConfidence
+    hypothesis: str
+
+    status: Literal[
+        "supported",
+        "contradicted",
+        "inconclusive",
+    ]
+
+    reason: str
+
+    confidence: Confidence
 
 
 class OpenQuestion(BaseModel):
+
     question_id: str
 
-    question: str = Field(max_length=320)
+    domain: DomainName
 
-    domain: str | None = None
-    availability: EvidenceAvailability
+    question: str
 
-    required_evidence: str | None = Field(
-        default=None,
-        max_length=300,
-    )
-
-    suggested_domain: str | None = None
+    required_evidence: str
 
 
-class InvestigationEvidenceState(BaseModel):
-    confirmed: list[EvidenceFact] = Field(
-        default_factory=list,
-        max_length=12,
-    )
+class EvidenceGap(BaseModel):
 
-    ruled_out: list[RuledOutHypothesis] = Field(
-        default_factory=list,
-        max_length=8,
-    )
+    domain: DomainName
 
-    open_questions: list[OpenQuestion] = Field(
-        default_factory=list,
-        max_length=8,
-    )
+    missing_evidence: str
+
+    reason: str
+
+
+class ToolFailure(BaseModel):
+
+    domain: DomainName
+
+    tool: str
+
+    stage: str
+
+    error: str
+
+    attempts: int = 1
 
 
 # ============================================================
-# DOMAIN
+# DOMAIN TASK
 # ============================================================
 
 
-class DomainRequest(BaseModel):
+class DomainTask(BaseModel):
+
     request_id: str
-    domain: str
 
-    question: str = Field(max_length=800)
+    domain: DomainName
+
+    question: str
+
+    evidence_goal: str
 
 
-class FindingDraft(BaseModel):
-    statement: str = Field(max_length=320)
-    evidence: str = Field(max_length=450)
+# ============================================================
+# DOMAIN RETURN CONTRACT
+# ============================================================
 
-    confidence: EvidenceConfidence
-    kind: EvidenceKind
 
-    sources: list[EvidenceSource] = Field(
+class DomainUpdate(BaseModel):
+
+    confirmed: list[
+        EvidenceFact
+    ] = Field(
         default_factory=list,
         max_length=4,
     )
 
-
-class RuledOutDraft(BaseModel):
-    hypothesis: str = Field(max_length=250)
-    reason: str = Field(max_length=350)
-
-    confidence: EvidenceConfidence
-
-
-class OpenQuestionDraft(BaseModel):
-    question: str = Field(max_length=320)
-
-    availability: EvidenceAvailability
-
-    required_evidence: str | None = Field(
-        default=None,
-        max_length=300,
-    )
-
-    suggested_domain: str | None = None
-
-
-class DomainFindingUpdate(BaseModel):
-    new_confirmed: list[FindingDraft] = Field(
+    verdicts: list[
+        HypothesisVerdict
+    ] = Field(
         default_factory=list,
-        max_length=4,
+        max_length=3,
     )
 
-    new_ruled_out: list[RuledOutDraft] = Field(
+    open_questions: list[
+        OpenQuestion
+    ] = Field(
         default_factory=list,
         max_length=2,
     )
 
-    new_open_questions: list[OpenQuestionDraft] = Field(
+    evidence_gaps: list[
+        EvidenceGap
+    ] = Field(
         default_factory=list,
         max_length=2,
     )
 
-    resolved_question_ids: list[str] = Field(
-        default_factory=list,
-        max_length=6,
-    )
-
-    summary: str = Field(max_length=550)
+    summary: str
 
 
 # ============================================================
@@ -218,53 +211,67 @@ class DomainFindingUpdate(BaseModel):
 # ============================================================
 
 
-class RCAAction(str, Enum):
-    REQUEST_MORE = "request_more"
-    CONCLUDE = "conclude"
-
-
-class RCAStopReason(str, Enum):
-    SUFFICIENT_EVIDENCE = "sufficient_evidence"
-    REMAINING_GAPS_NOT_MATERIAL = "remaining_gaps_not_material"
-    MAX_ROUNDS_REACHED = "max_rounds_reached"
-
-
-class RCAFollowUp(BaseModel):
-    domain: str
-    question: str = Field(max_length=800)
-
-
 class RCADecision(BaseModel):
-    action: RCAAction
 
-    request: RCAFollowUp | None = None
+    action: Literal[
+        "request_more",
+        "conclude",
+    ]
 
-    conclusion: str | None = Field(
-        default=None,
-        max_length=1800,
+    request: DomainTask | None = None
+
+    conclusion: str | None = None
+
+    confidence: Confidence = "MEDIUM"
+
+    reasoning_summary: str
+
+    stop_reason: Literal[
+        "sufficient_evidence",
+        "max_rounds_reached",
+        "evidence_exhausted",
+    ] | None = None
+
+
+# ============================================================
+# SHARED BLACKBOARD
+# ============================================================
+
+
+class InvestigationState(BaseModel):
+
+    incident: IncidentContext
+
+    confirmed_facts: list[
+        EvidenceFact
+    ] = Field(
+        default_factory=list,
     )
 
-    confidence: EvidenceConfidence
+    hypothesis_verdicts: list[
+        HypothesisVerdict
+    ] = Field(
+        default_factory=list,
+    )
 
-    reasoning_summary: str = Field(max_length=900)
+    open_questions: list[
+        OpenQuestion
+    ] = Field(
+        default_factory=list,
+    )
 
-    stop_reason: RCAStopReason | None = None
+    evidence_gaps: list[
+        EvidenceGap
+    ] = Field(
+        default_factory=list,
+    )
 
+    tool_failures: list[
+        ToolFailure
+    ] = Field(
+        default_factory=list,
+    )
 
-# ============================================================
-# FINAL RESULT
-# ============================================================
+    current_task: DomainTask | None = None
 
-
-class InvestigationResult(BaseModel):
-    incident: IncidentContext
-    objective: IncidentObjective
-
-    rounds_used: int
-
-    evidence_state: InvestigationEvidenceState
-
-    domain_history: list[dict]
-    rca_history: list[RCADecision]
-
-    final_rca: RCADecision
+    rounds_used: int = 0

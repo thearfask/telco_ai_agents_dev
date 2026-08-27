@@ -1,7 +1,8 @@
-pandas 
-pyarrow 
-datasets 
-huggingface_hub 
-pydantic 
-faker 
+streamlit
+duckdb
+sqlglot
+langchain-openai
+langgraph
+pydantic
 python-dotenv
+PyYAML

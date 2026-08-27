@@ -1,0 +1,1735 @@
+{
+  "incident_id": "INC-COMPLEX-001",
+  "started_at": "2026-08-28T01:38:02.319213+05:30",
+  "completed_at": "2026-08-28T01:38:36.833731+05:30",
+  "raw_incident": "INC-COMPLEX-001\n\nUsers report intermittent uplink performance degradation during WIN-000037.\n\nThe degradation is not continuous. Upload performance appears to drop sharply for short periods and then recover.\n\nInitial monitoring suggests:\n- UL_BLER may increase during some degraded periods.\n- UL_SNR may fluctuate, but it is unclear whether signal quality consistently explains the degradation.\n- UL_MCS appears unstable.\n- Uplink PRB utilization may increase during parts of the window.\n- Buffer buildup may also be occurring.\n\nDetermine whether the telemetry evidence is more consistent with:\n\n1. poor uplink signal quality,\n2. uplink radio reliability degradation,\n3. uplink resource congestion,\n4. buffering or traffic-pressure effects,\n5. interaction between multiple mechanisms,\n6. or another telemetry mechanism.\n\nDo not assume that correlation between two metrics proves causation.\n\nIdentify evidence that would support or contradict the competing mechanisms, and determine what telemetry should be examined to distinguish them.\n\nIf the available telemetry cannot distinguish the mechanisms, clearly identify the evidence gap rather than forcing a conclusion.",
+  "stage_count": 7,
+  "stages": [
+    {
+      "stage": "01_incident_parser",
+      "agent": "incident_parser",
+      "timestamp": "2026-08-28T01:38:07.758689+05:30",
+      "input": {
+        "model_profile": "incident_parser",
+        "system_prompt": "\nYou are parsing a telecom incident for a telemetry investigation.\n\nDo not investigate the incident.\n\nExtract only what the incident explicitly says or clearly requires.\n\nDo not invent:\n- KPI values;\n- timestamps;\n- network elements;\n- root causes;\n- data availability.\n\nPreserve the difference between:\n- reported symptoms;\n- proposed hypotheses;\n- investigation constraints.\n\nKeep the structured output concise.\n",
+        "user_prompt": "\nINCIDENT|\n\nINC-COMPLEX-001\n\nUsers report intermittent uplink performance degradation during WIN-000037.\n\nThe degradation is not continuous. Upload performance appears to drop sharply for short periods and then recover.\n\nInitial monitoring suggests:\n- UL_BLER may increase during some degraded periods.\n- UL_SNR may fluctuate, but it is unclear whether signal quality consistently explains the degradation.\n- UL_MCS appears unstable.\n- Uplink PRB utilization may increase during parts of the window.\n- Buffer buildup may also be occurring.\n\nDetermine whether the telemetry evidence is more consistent with:\n\n1. poor uplink signal quality,\n2. uplink radio reliability degradation,\n3. uplink resource congestion,\n4. buffering or traffic-pressure effects,\n5. interaction between multiple mechanisms,\n6. or another telemetry mechanism.\n\nDo not assume that correlation between two metrics proves causation.\n\nIdentify evidence that would support or contradict the competing mechanisms, and determine what telemetry should be examined to distinguish them.\n\nIf the available telemetry cannot distinguish the mechanisms, clearly identify the evidence gap rather than forcing a conclusion.\n",
+        "raw_incident": "INC-COMPLEX-001\n\nUsers report intermittent uplink performance degradation during WIN-000037.\n\nThe degradation is not continuous. Upload performance appears to drop sharply for short periods and then recover.\n\nInitial monitoring suggests:\n- UL_BLER may increase during some degraded periods.\n- UL_SNR may fluctuate, but it is unclear whether signal quality consistently explains the degradation.\n- UL_MCS appears unstable.\n- Uplink PRB utilization may increase during parts of the window.\n- Buffer buildup may also be occurring.\n\nDetermine whether the telemetry evidence is more consistent with:\n\n1. poor uplink signal quality,\n2. uplink radio reliability degradation,\n3. uplink resource congestion,\n4. buffering or traffic-pressure effects,\n5. interaction between multiple mechanisms,\n6. or another telemetry mechanism.\n\nDo not assume that correlation between two metrics proves causation.\n\nIdentify evidence that would support or contradict the competing mechanisms, and determine what telemetry should be examined to distinguish them.\n\nIf the available telemetry cannot distinguish the mechanisms, clearly identify the evidence gap rather than forcing a conclusion."
+      },
+      "output": {
+        "incident_id": "INC-COMPLEX-001",
+        "problem_statement": "Users report intermittent uplink performance degradation during WIN-000037. Degradation is not continuous; upload performance drops sharply for short periods and then recovers.",
+        "investigation_goal": "Determine which telemetry mechanism(s) are most consistent with the intermittent uplink performance degradation during WIN-000037 (e.g., poor signal quality, radio reliability degradation, resource congestion, buffering/traffic-pressure effects, or an interaction).",
+        "symptoms": [
+          "Users report intermittent uplink performance degradation during WIN-000037.",
+          "Upload performance drops sharply for short periods and then recovers (degradation is not continuous).",
+          "UL_BLER may increase during some degraded periods.",
+          "UL_SNR may fluctuate, but it is unclear whether signal quality consistently explains the degradation.",
+          "UL_MCS appears unstable.",
+          "Uplink PRB utilization may increase during parts of the window.",
+          "Buffer buildup may also be occurring."
+        ],
+        "window_ids": [
+          "WIN-000037"
+        ],
+        "explicit_hypotheses": [
+          "poor uplink signal quality",
+          "uplink radio reliability degradation",
+          "uplink resource congestion",
+          "buffering or traffic-pressure effects",
+          "interaction between multiple mechanisms",
+          "another telemetry mechanism"
+        ],
+        "constraints": [
+          "Do not assume that correlation between two metrics proves causation.",
+          "Do not investigate beyond what is explicitly requested: identify evidence supporting/contradicting mechanisms and what telemetry should be examined.",
+          "Do not force a conclusion if available telemetry cannot distinguish mechanisms; identify evidence gaps instead."
+        ],
+        "missing_context": [
+          "Whether UL_SNR consistently explains degradation across all degraded periods.",
+          "Whether UL_MCS instability correlates with BLER increases and/or resource/queue indicators in a way that distinguishes between signal-quality vs reliability vs congestion effects.",
+          "Whether buffer buildup timing aligns with PRB utilization increases and/or the onset/recovery of performance drops.",
+          "Specific telemetry values/thresholds for UL_BLER, UL_SNR, UL_MCS, UL PRB utilization, and buffering/queue metrics during degraded vs recovered periods.",
+          "Whether any additional telemetry mechanisms are available (e.g., scheduling/queue delay indicators, retransmission counts) to distinguish radio reliability vs congestion/buffering effects."
+        ]
+      },
+      "metadata": {
+        "estimated_input_tokens": 398
+      }
+    },
+    {
+      "stage": "02_telemetry_planner",
+      "agent": "telemetry",
+      "timestamp": "2026-08-28T01:38:23.382694+05:30",
+      "input": {
+        "model_profile": "telemetry",
+        "system_prompt": "\nYou are a senior Telemetry Domain Engineer.\n\nYour job is to design the smallest useful telemetry investigation.\n\nDo not determine the root cause yet.\n\nWORKFLOW:\n\n1. Understand the incident.\n2. Identify plausible telemetry mechanisms.\n3. Identify evidence that would distinguish them.\n4. Determine which engineering concepts need metric resolution.\n5. Choose the smallest useful tool sequence.\n6. Choose analysis granularity appropriate to the measurement data.\n7. Define the focused operational evidence goal.\n\nIMPORTANT:\n\nDo not mechanically use minute or 5-minute buckets.\n\nFor short/high-frequency telemetry windows, preserve native or\nsample-level behavior unless aggregation is justified.\n\nDo not assume correlation proves causation.\n\nDo not invent unavailable metrics.\n\nDo not perform SQL in this stage.\n\nDo not claim that any hypothesis is supported until operational\nevidence exists.\n\nOUTPUT DISCIPLINE:\n\n- maximum 5 hypotheses;\n- maximum 4 evidence items per hypothesis;\n- maximum 5 metric concepts;\n- maximum 4 tools in recommended_sequence;\n- keep evidence_goal concise;\n- do not repeat the full incident.\n",
+        "user_prompt": "\nINCIDENT CONTEXT|\n\n{\"incident_id\":\"INC-COMPLEX-001\",\"problem_statement\":\"Users report intermittent uplink performance degradation during WIN-000037. Degradation is not continuous; upload performance drops sharply for short periods and then recovers.\",\"investigation_goal\":\"Determine which telemetry mechanism(s) are most consistent with the intermittent uplink performance degradation during WIN-000037 (e.g., poor signal quality, radio reliability degradation, resource congestion, buffering/traffic-pressure effects, or an interaction).\",\"symptoms\":[\"Users report intermittent uplink performance degradation during WIN-000037.\",\"Upload performance drops sharply for short periods and then recovers (degradation is not continuous).\",\"UL_BLER may increase during some degraded periods.\",\"UL_SNR may fluctuate, but it is unclear whether signal quality consistently explains the degradation.\",\"UL_MCS appears unstable.\",\"Uplink PRB utilization may increase during parts of the window.\",\"Buffer buildup may also be occurring.\"],\"window_ids\":[\"WIN-000037\"],\"explicit_hypotheses\":[\"poor uplink signal quality\",\"uplink radio reliability degradation\",\"uplink resource congestion\",\"buffering or traffic-pressure effects\",\"interaction between multiple mechanisms\",\"another telemetry mechanism\"],\"constraints\":[\"Do not assume that correlation between two metrics proves causation.\",\"Do not investigate beyond what is explicitly requested: identify evidence supporting/contradicting mechanisms and what telemetry should be examined.\",\"Do not force a conclusion if available telemetry cannot distinguish mechanisms; identify evidence gaps instead.\"],\"missing_context\":[\"Whether UL_SNR consistently explains degradation across all degraded periods.\",\"Whether UL_MCS instability correlates with BLER increases and/or resource/queue indicators in a way that distinguishes between signal-quality vs reliability vs congestion effects.\",\"Whether buffer buildup timing aligns with PRB utilization increases and/or the onset/recovery of performance drops.\",\"Specific telemetry values/thresholds for UL_BLER, UL_SNR, UL_MCS, UL PRB utilization, and buffering/queue metrics during degraded vs recovered periods.\",\"Whether any additional telemetry mechanisms are available (e.g., scheduling/queue delay indicators, retransmission counts) to distinguish radio reliability vs congestion/buffering effects.\"]}\n\nMANDATORY POLICY AND EVIDENCE RULES|\n\n{\"policy\":{\"policy_id\":\"TELCO_AI_INVESTIGATION_POLICY\",\"version\":\"1.0\",\"domain\":\"telemetry\",\"mandatory_rules\":[\"global.evidence.never_invent_missing_evidence\",\"global.evidence.distinguish_observed_from_inferred\",\"global.evidence.distinguish_knowledge_from_incident_evidence\",\"global.evidence.knowledge_is_not_incident_proof\",\"global.evidence.historical_similarity_is_not_incident_proof\",\"global.evidence.correlation_does_not_establish_causation\",\"global.evidence.absence_of_evidence_does_not_prove_absence\",\"global.reasoning.prefer_existing_evidence_before_new_tool_calls\",\"global.reasoning.use_minimum_evidence_needed\",\"global.reasoning.investigate_material_uncertainty_only\",\"global.reasoning.allow_multiple_competing_hypotheses\",\"global.reasoning.actively_seek_contradicting_evidence\",\"global.reasoning.do_not_force_root_cause\",\"global.reasoning.allow_root_cause_undetermined\",\"global.reasoning.separate_symptom_impairment_driver_and_root_cause\",\"global.claims.temporal_change_requires_temporal_comparison\",\"global.claims.baseline_claim_requires_valid_baseline\",\"global.claims.causal_claim_requires_supporting_evidence\",\"global.claims.cross_domain_claim_requires_cross_domain_evidence\",\"global.claims.do_not_relabel_metrics\",\"global.tool_usage.tool_call_requires_specific_evidence_goal\",\"global.tool_usage.avoid_duplicate_queries\",\"global.tool_usage.avoid_querying_unavailable_evidence_repeatedly\",\"global.tool_usage.prefer_small_focused_queries\",\"global.tool_usage.do_not_use_tool_only_because_available\",\"global.context_management.send_compact_findings_to_rca\",\"global.context_management.do_not_send_raw_tool_output_to_rca\",\"global.context_management.retain_confirmed_findings\",\"global.context_management.retain_material_ruled_out_hypotheses\",\"global.context_management.retain_material_open_questions\",\"global.context_management.remove_resolved_open_questions\",\"telemetry.scope.responsible_for_measured_network_behavior\",\"telemetry.scope.may_identify_telemetry_level_impairment\",\"telemetry.scope.may_rank_telemetry_supported_hypotheses\",\"telemetry.scope.must_not_claim_physical_failure_without_support\",\"telemetry.metric_semantics.bler_is_not_packet_loss\",\"telemetry.metric_semantics.bler_alone_is_not_root_cause\",\"telemetry.metric_semantics.bytes_are_not_throughput_without_time_basis\",\"telemetry.metric_semantics.prb_utilization_alone_does_not_prove_congestion\",\"telemetry.metric_semantics.rsrp_alone_does_not_establish_radio_quality\",\"telemetry.metric_semantics.mcs_alone_does_not_establish_root_cause\",\"telemetry.congestion.require_absolute_resource_utilization_evidence\",\"telemetry.congestion.relative_difference_alone_is_insufficient\",\"telemetry.congestion.require_alignment_with_reported_service_degradation\",\"telemetry.congestion.prefer_supporting_load_or_scheduler_evidence_when_available\",\"telemetry.radio_reliability.elevated_bler_supports_reliability_impairment\",\"telemetry.radio_reliability.bler_does_not_identify_physical_mechanism\",\"telemetry.radio_reliability.evaluate_ul_and_dl_independently\",\"telemetry.radio_reliability.consider_signal_resource_and_link_adaptation_evidence\",\"telemetry.signal_quality.do_not_equate_signal_strength_with_signal_quality\",\"telemetry.signal_quality.healthy_rsrp_does_not_rule_out_interference\",\"telemetry.signal_quality.poor_rsrp_may_support_coverage_hypothesis_but_does_not_prove_it\",\"telemetry.temporal_analysis.average_min_max_do_not_prove_burstiness\",\"telemetry.temporal_analysis.intermittency_requires_time_resolved_evidence\",\"telemetry.temporal_analysis.degradation_requires_comparison_across_time_or_baseline\",\"telemetry.sql.preserve_incident_scope\",\"telemetry.sql.preserve_window_scope\",\"telemetry.sql.never_expand_scope_without_explicit_reason\",\"telemetry.sql.prefer_simple_duckdb_queries\",\"telemetry.sql.split_complex_analysis_into_sequential_queries\",\"telemetry.sql.use_only_available_schema\",\"telemetry.sql.do_not_manufacture_missing_kpis\",\"telemetry.escalation.hardware_hypothesis_should_request_alarm_or_log_evidence\",\"telemetry.escalation.shared_dependency_hypothesis_should_request_topology_evidence\",\"telemetry.escalation.unresolved_cross_domain_question_should_be_returned_to_rca\",\"knowledge_usage.rag.use_when_domain_reference_knowledge_is_needed\",\"knowledge_usage.rag.do_not_retrieve_when_current_context_is_sufficient\",\"knowledge_usage.rag.prefer_domain_and_context_filtered_retrieval\",\"knowledge_usage.rag.retrieved_documentation_is_knowledge_not_observed_evidence\",\"knowledge_usage.rag.prefer_current_applicable_document_version\",\"knowledge_usage.policy_precedence.organization_policy_overrides_general_model_knowledge\",\"knowledge_usage.policy_precedence.applicable_specific_policy_overrides_general_policy\",\"knowledge_usage.policy_precedence.incident_evidence_does_not_override_policy_constraints\"]},\"evidence_rules\":{\"version\":\"1.0\",\"evidence_levels\":{\"confirmed\":{\"description\":\"Directly demonstrated by available evidence.\",\"allowed_language\":[\"confirmed\",\"demonstrates\",\"establishes\"]},\"supported\":{\"description\":\"Multiple observations are consistent with the hypothesis but do not prove it.\",\"allowed_language\":[\"supported\",\"consistent with\",\"evidence suggests\"]},\"possible\":{\"description\":\"Plausible but insufficiently evidenced.\",\"allowed_language\":[\"possible\",\"remains plausible\",\"cannot be ruled out\"]},\"contradicted\":{\"description\":\"Available evidence materially conflicts with the hypothesis.\",\"allowed_language\":[\"contradicted\",\"not supported by available evidence\",\"unlikely based on available evidence\"]},\"unassessable\":{\"description\":\"Required evidence is unavailable.\",\"allowed_language\":[\"cannot be determined\",\"insufficient evidence\",\"not observable from available data\"]}},\"reasoning_rules\":[{\"rule_id\":\"NO_CAUSE_FROM_CORRELATION\",\"rule\":\"Correlation or temporal alignment alone must not be described as proof of causation.\"},{\"rule_id\":\"NO_PROXY_AS_DIRECT_EVIDENCE\",\"rule\":\"A proxy metric must not be presented as direct measurement unless the metric catalog explicitly defines that relationship.\"},{\"rule_id\":\"NO_MISSING_DATA_INFERENCE\",\"rule\":\"Absence of a required metric must result in an evidence gap, not an inferred value.\"},{\"rule_id\":\"NO_ROOT_CAUSE_FROM_IMPAIRMENT\",\"rule\":\"A confirmed impairment must not automatically be promoted to a physical root cause.\"},{\"rule_id\":\"CONTRADICTION_IS_EVIDENCE\",\"rule\":\"Evidence that materially contradicts a hypothesis should be reported, not omitted.\"},{\"rule_id\":\"PREFER_DISCRIMINATING_EVIDENCE\",\"rule\":\"Prefer evidence that distinguishes competing hypotheses over collecting additional unrelated metrics.\"},{\"rule_id\":\"STOP_WHEN_DOMAIN_EXHAUSTED\",\"rule\":\"When remaining hypotheses require evidence outside the current domain, return the evidence gap and recommend the appropriate domain rather than continuing redundant investigation.\"}]}}\n\nAVAILABLE TELEMETRY TOOLS|\n\n\nYou have the following telemetry-domain capabilities.\n\n1. telemetry_patterns\n\nPurpose:\nRetrieve curated diagnostic hypotheses and evidence relationships.\n\nUse when:\n- multiple technical mechanisms could explain the incident;\n- you need supporting and contradicting evidence;\n- you need to determine what evidence discriminates hypotheses.\n\nKnowledge only.\nIt does not provide incident evidence.\n\n\n2. telemetry_metrics\n\nPurpose:\nResolve engineering concepts into telemetry metrics and metric\nsemantics.\n\nUse when:\n- you know the evidence concept but not the exact metric;\n- you need trusted metric meaning;\n- you need to avoid inventing metric names.\n\nKnowledge only.\nIt does not provide incident evidence.\n\n\n3. telemetry_runbook\n\nPurpose:\nRetrieve deeper engineering troubleshooting methodology.\n\nUse when:\n- the investigation is complex;\n- procedural guidance would materially improve the investigation.\n\nKnowledge only.\nDo not use automatically.\n\n\n4. telemetry_sql\n\nPurpose:\nRetrieve actual operational telemetry evidence from DuckDB.\n\nUse when:\n- you know what evidence is required;\n- actual KPI values, distributions, timestamps, samples or\n  comparisons are required.\n\nThis is an operational evidence tool.\n\n\n5. telemetry_schema\n\nPurpose:\nInspect the currently available telemetry schema.\n\nUse when:\n- table or field availability is genuinely uncertain.\n\nDo not use SQL to rediscover known schema.\n\n\nCreate the telemetry investigation plan.\n\nDo not execute a tool.\n",
+        "parsed_incident": {
+          "incident_id": "INC-COMPLEX-001",
+          "problem_statement": "Users report intermittent uplink performance degradation during WIN-000037. Degradation is not continuous; upload performance drops sharply for short periods and then recovers.",
+          "investigation_goal": "Determine which telemetry mechanism(s) are most consistent with the intermittent uplink performance degradation during WIN-000037 (e.g., poor signal quality, radio reliability degradation, resource congestion, buffering/traffic-pressure effects, or an interaction).",
+          "symptoms": [
+            "Users report intermittent uplink performance degradation during WIN-000037.",
+            "Upload performance drops sharply for short periods and then recovers (degradation is not continuous).",
+            "UL_BLER may increase during some degraded periods.",
+            "UL_SNR may fluctuate, but it is unclear whether signal quality consistently explains the degradation.",
+            "UL_MCS appears unstable.",
+            "Uplink PRB utilization may increase during parts of the window.",
+            "Buffer buildup may also be occurring."
+          ],
+          "window_ids": [
+            "WIN-000037"
+          ],
+          "explicit_hypotheses": [
+            "poor uplink signal quality",
+            "uplink radio reliability degradation",
+            "uplink resource congestion",
+            "buffering or traffic-pressure effects",
+            "interaction between multiple mechanisms",
+            "another telemetry mechanism"
+          ],
+          "constraints": [
+            "Do not assume that correlation between two metrics proves causation.",
+            "Do not investigate beyond what is explicitly requested: identify evidence supporting/contradicting mechanisms and what telemetry should be examined.",
+            "Do not force a conclusion if available telemetry cannot distinguish mechanisms; identify evidence gaps instead."
+          ],
+          "missing_context": [
+            "Whether UL_SNR consistently explains degradation across all degraded periods.",
+            "Whether UL_MCS instability correlates with BLER increases and/or resource/queue indicators in a way that distinguishes between signal-quality vs reliability vs congestion effects.",
+            "Whether buffer buildup timing aligns with PRB utilization increases and/or the onset/recovery of performance drops.",
+            "Specific telemetry values/thresholds for UL_BLER, UL_SNR, UL_MCS, UL PRB utilization, and buffering/queue metrics during degraded vs recovered periods.",
+            "Whether any additional telemetry mechanisms are available (e.g., scheduling/queue delay indicators, retransmission counts) to distinguish radio reliability vs congestion/buffering effects."
+          ]
+        },
+        "mandatory_context": {
+          "policy": {
+            "policy_id": "TELCO_AI_INVESTIGATION_POLICY",
+            "version": "1.0",
+            "domain": "telemetry",
+            "mandatory_rules": [
+              "global.evidence.never_invent_missing_evidence",
+              "global.evidence.distinguish_observed_from_inferred",
+              "global.evidence.distinguish_knowledge_from_incident_evidence",
+              "global.evidence.knowledge_is_not_incident_proof",
+              "global.evidence.historical_similarity_is_not_incident_proof",
+              "global.evidence.correlation_does_not_establish_causation",
+              "global.evidence.absence_of_evidence_does_not_prove_absence",
+              "global.reasoning.prefer_existing_evidence_before_new_tool_calls",
+              "global.reasoning.use_minimum_evidence_needed",
+              "global.reasoning.investigate_material_uncertainty_only",
+              "global.reasoning.allow_multiple_competing_hypotheses",
+              "global.reasoning.actively_seek_contradicting_evidence",
+              "global.reasoning.do_not_force_root_cause",
+              "global.reasoning.allow_root_cause_undetermined",
+              "global.reasoning.separate_symptom_impairment_driver_and_root_cause",
+              "global.claims.temporal_change_requires_temporal_comparison",
+              "global.claims.baseline_claim_requires_valid_baseline",
+              "global.claims.causal_claim_requires_supporting_evidence",
+              "global.claims.cross_domain_claim_requires_cross_domain_evidence",
+              "global.claims.do_not_relabel_metrics",
+              "global.tool_usage.tool_call_requires_specific_evidence_goal",
+              "global.tool_usage.avoid_duplicate_queries",
+              "global.tool_usage.avoid_querying_unavailable_evidence_repeatedly",
+              "global.tool_usage.prefer_small_focused_queries",
+              "global.tool_usage.do_not_use_tool_only_because_available",
+              "global.context_management.send_compact_findings_to_rca",
+              "global.context_management.do_not_send_raw_tool_output_to_rca",
+              "global.context_management.retain_confirmed_findings",
+              "global.context_management.retain_material_ruled_out_hypotheses",
+              "global.context_management.retain_material_open_questions",
+              "global.context_management.remove_resolved_open_questions",
+              "telemetry.scope.responsible_for_measured_network_behavior",
+              "telemetry.scope.may_identify_telemetry_level_impairment",
+              "telemetry.scope.may_rank_telemetry_supported_hypotheses",
+              "telemetry.scope.must_not_claim_physical_failure_without_support",
+              "telemetry.metric_semantics.bler_is_not_packet_loss",
+              "telemetry.metric_semantics.bler_alone_is_not_root_cause",
+              "telemetry.metric_semantics.bytes_are_not_throughput_without_time_basis",
+              "telemetry.metric_semantics.prb_utilization_alone_does_not_prove_congestion",
+              "telemetry.metric_semantics.rsrp_alone_does_not_establish_radio_quality",
+              "telemetry.metric_semantics.mcs_alone_does_not_establish_root_cause",
+              "telemetry.congestion.require_absolute_resource_utilization_evidence",
+              "telemetry.congestion.relative_difference_alone_is_insufficient",
+              "telemetry.congestion.require_alignment_with_reported_service_degradation",
+              "telemetry.congestion.prefer_supporting_load_or_scheduler_evidence_when_available",
+              "telemetry.radio_reliability.elevated_bler_supports_reliability_impairment",
+              "telemetry.radio_reliability.bler_does_not_identify_physical_mechanism",
+              "telemetry.radio_reliability.evaluate_ul_and_dl_independently",
+              "telemetry.radio_reliability.consider_signal_resource_and_link_adaptation_evidence",
+              "telemetry.signal_quality.do_not_equate_signal_strength_with_signal_quality",
+              "telemetry.signal_quality.healthy_rsrp_does_not_rule_out_interference",
+              "telemetry.signal_quality.poor_rsrp_may_support_coverage_hypothesis_but_does_not_prove_it",
+              "telemetry.temporal_analysis.average_min_max_do_not_prove_burstiness",
+              "telemetry.temporal_analysis.intermittency_requires_time_resolved_evidence",
+              "telemetry.temporal_analysis.degradation_requires_comparison_across_time_or_baseline",
+              "telemetry.sql.preserve_incident_scope",
+              "telemetry.sql.preserve_window_scope",
+              "telemetry.sql.never_expand_scope_without_explicit_reason",
+              "telemetry.sql.prefer_simple_duckdb_queries",
+              "telemetry.sql.split_complex_analysis_into_sequential_queries",
+              "telemetry.sql.use_only_available_schema",
+              "telemetry.sql.do_not_manufacture_missing_kpis",
+              "telemetry.escalation.hardware_hypothesis_should_request_alarm_or_log_evidence",
+              "telemetry.escalation.shared_dependency_hypothesis_should_request_topology_evidence",
+              "telemetry.escalation.unresolved_cross_domain_question_should_be_returned_to_rca",
+              "knowledge_usage.rag.use_when_domain_reference_knowledge_is_needed",
+              "knowledge_usage.rag.do_not_retrieve_when_current_context_is_sufficient",
+              "knowledge_usage.rag.prefer_domain_and_context_filtered_retrieval",
+              "knowledge_usage.rag.retrieved_documentation_is_knowledge_not_observed_evidence",
+              "knowledge_usage.rag.prefer_current_applicable_document_version",
+              "knowledge_usage.policy_precedence.organization_policy_overrides_general_model_knowledge",
+              "knowledge_usage.policy_precedence.applicable_specific_policy_overrides_general_policy",
+              "knowledge_usage.policy_precedence.incident_evidence_does_not_override_policy_constraints"
+            ]
+          },
+          "evidence_rules": {
+            "version": "1.0",
+            "evidence_levels": {
+              "confirmed": {
+                "description": "Directly demonstrated by available evidence.",
+                "allowed_language": [
+                  "confirmed",
+                  "demonstrates",
+                  "establishes"
+                ]
+              },
+              "supported": {
+                "description": "Multiple observations are consistent with the hypothesis but do not prove it.",
+                "allowed_language": [
+                  "supported",
+                  "consistent with",
+                  "evidence suggests"
+                ]
+              },
+              "possible": {
+                "description": "Plausible but insufficiently evidenced.",
+                "allowed_language": [
+                  "possible",
+                  "remains plausible",
+                  "cannot be ruled out"
+                ]
+              },
+              "contradicted": {
+                "description": "Available evidence materially conflicts with the hypothesis.",
+                "allowed_language": [
+                  "contradicted",
+                  "not supported by available evidence",
+                  "unlikely based on available evidence"
+                ]
+              },
+              "unassessable": {
+                "description": "Required evidence is unavailable.",
+                "allowed_language": [
+                  "cannot be determined",
+                  "insufficient evidence",
+                  "not observable from available data"
+                ]
+              }
+            },
+            "reasoning_rules": [
+              {
+                "rule_id": "NO_CAUSE_FROM_CORRELATION",
+                "rule": "Correlation or temporal alignment alone must not be described as proof of causation."
+              },
+              {
+                "rule_id": "NO_PROXY_AS_DIRECT_EVIDENCE",
+                "rule": "A proxy metric must not be presented as direct measurement unless the metric catalog explicitly defines that relationship."
+              },
+              {
+                "rule_id": "NO_MISSING_DATA_INFERENCE",
+                "rule": "Absence of a required metric must result in an evidence gap, not an inferred value."
+              },
+              {
+                "rule_id": "NO_ROOT_CAUSE_FROM_IMPAIRMENT",
+                "rule": "A confirmed impairment must not automatically be promoted to a physical root cause."
+              },
+              {
+                "rule_id": "CONTRADICTION_IS_EVIDENCE",
+                "rule": "Evidence that materially contradicts a hypothesis should be reported, not omitted."
+              },
+              {
+                "rule_id": "PREFER_DISCRIMINATING_EVIDENCE",
+                "rule": "Prefer evidence that distinguishes competing hypotheses over collecting additional unrelated metrics."
+              },
+              {
+                "rule_id": "STOP_WHEN_DOMAIN_EXHAUSTED",
+                "rule": "When remaining hypotheses require evidence outside the current domain, return the evidence gap and recommend the appropriate domain rather than continuing redundant investigation."
+              }
+            ]
+          }
+        },
+        "available_tools": "\nYou have the following telemetry-domain capabilities.\n\n1. telemetry_patterns\n\nPurpose:\nRetrieve curated diagnostic hypotheses and evidence relationships.\n\nUse when:\n- multiple technical mechanisms could explain the incident;\n- you need supporting and contradicting evidence;\n- you need to determine what evidence discriminates hypotheses.\n\nKnowledge only.\nIt does not provide incident evidence.\n\n\n2. telemetry_metrics\n\nPurpose:\nResolve engineering concepts into telemetry metrics and metric\nsemantics.\n\nUse when:\n- you know the evidence concept but not the exact metric;\n- you need trusted metric meaning;\n- you need to avoid inventing metric names.\n\nKnowledge only.\nIt does not provide incident evidence.\n\n\n3. telemetry_runbook\n\nPurpose:\nRetrieve deeper engineering troubleshooting methodology.\n\nUse when:\n- the investigation is complex;\n- procedural guidance would materially improve the investigation.\n\nKnowledge only.\nDo not use automatically.\n\n\n4. telemetry_sql\n\nPurpose:\nRetrieve actual operational telemetry evidence from DuckDB.\n\nUse when:\n- you know what evidence is required;\n- actual KPI values, distributions, timestamps, samples or\n  comparisons are required.\n\nThis is an operational evidence tool.\n\n\n5. telemetry_schema\n\nPurpose:\nInspect the currently available telemetry schema.\n\nUse when:\n- table or field availability is genuinely uncertain.\n\nDo not use SQL to rediscover known schema.\n"
+      },
+      "output": {
+        "incident_intent": "Use time-resolved uplink telemetry from WIN-000037 to determine which impairment mechanism(s) best match intermittent upload performance drops: signal-quality, radio reliability, resource congestion, buffering/traffic pressure, or an interaction—without assuming causation.",
+        "intent_clarity": "clear",
+        "hypotheses": [
+          {
+            "hypothesis": "Poor uplink signal quality (coverage/interference) drives intermittent BLER increases and link adaptation instability.",
+            "evidence_needed": [
+              "During degraded bursts, UL_SNR shows clear short-time dips (not just average degradation).",
+              "UL_MCS changes/instability during bursts are consistent with adaptation to worse link conditions (e.g., lower/lurching MCS around SNR dips).",
+              "UL_BLER elevates during the same burst windows as UL_SNR dips (temporal alignment).",
+              "UL_PRB_utilization and the buffer/queue metric do not show a primary spike/step-change at the same times (or are near baseline compared to BLER/SNR behavior)."
+            ]
+          },
+          {
+            "hypothesis": "Uplink radio reliability degradation (errors increase) occurs without strong signal-quality deterioration (e.g., reliability faults rather than pure SNR/coverage).",
+            "evidence_needed": [
+              "UL_BLER spikes during degraded bursts while UL_SNR remains comparatively stable (no matching SNR dip magnitude/pattern).",
+              "UL_MCS does not show the degree of adaptation shift expected from sustained SNR degradation (stability relative to BLER spikes).",
+              "UL_PRB_utilization and buffer/queue do not rise in a way that tracks the BLER spikes (reducing the likelihood of congestion/buffering as primary driver).",
+              "Recovery in observed upload performance coincides with BLER returning to normal even if UL_SNR does not exhibit the same burst-like pattern."
+            ]
+          },
+          {
+            "hypothesis": "Uplink resource congestion/scheduling pressure causes intermittent service degradation (PRB availability pressure, not primarily link quality).",
+            "evidence_needed": [
+              "UL_PRB_utilization shows sharp burst-like increases that align with upload performance drops.",
+              "UL_SNR does not consistently deteriorate during the most severe performance drops (lack of sustained SNR dip alignment).",
+              "UL_MCS behavior does not fully explain the drop (i.e., changes in MCS are not the sole driver of throughput impairment compared to PRB pressure).",
+              "If available, the buffer/queue metric increases or queueing increases during the same congested bursts (alignment with service-delay symptoms)."
+            ]
+          },
+          {
+            "hypothesis": "Buffering/traffic-pressure (queue buildup) causes intermittent upload slowdowns; radio conditions may be secondary.",
+            "evidence_needed": [
+              "Buffer/queue indicator shows burst-like growth starting near the onset of upload degradation windows.",
+              "During degradation, UL_SNR remains relatively stable compared to the sharpness of the queue increase (signal quality not the primary pattern).",
+              "UL_PRB_utilization is not required to spike as strongly as the buffer/queue metric (queueing can rise even with moderate PRB utilization if service rate lags demand).",
+              "During recovery, the buffer/queue metric drains and performance improves without requiring a corresponding BLER/SNR pattern to fully explain recovery."
+            ]
+          },
+          {
+            "hypothesis": "Interaction between mechanisms (e.g., intermittent worse signal quality plus elevated resource/queue pressure) amplifies BLER/MCS instability and throughput drops.",
+            "evidence_needed": [
+              "The worst bursts show simultaneous impairing conditions (e.g., UL_SNR deterioration and elevated UL_PRB_utilization or queue growth) more than during milder degraded periods.",
+              "Some degraded bursts are explainable by one mechanism alone (e.g., BLER up with modest PRB change), while others require the combined pattern—indicating intermittency from interactions.",
+              "BLER peaks (and/or most severe MCS instability) are strongest when both (signal-quality pressure AND resource/queue pressure) are present together (temporal comparison across bursts).",
+              "Recovery requires improvement in both contributing conditions (e.g., SNR rebounds and queue drains), rather than only one changing."
+            ]
+          }
+        ],
+        "recommended_sequence": [
+          "telemetry_patterns",
+          "telemetry_schema",
+          "telemetry_metrics",
+          "telemetry_sql"
+        ],
+        "metric_concepts": [
+          "UL_BLER (uplink block error rate)",
+          "UL_SNR (uplink signal-to-noise ratio)",
+          "UL_MCS (uplink modulation/coding indicator, time-resolved)",
+          "UL_PRB_utilization (uplink resource block utilization, time-resolved)",
+          "UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)"
+        ],
+        "analysis_granularity": "native",
+        "evidence_goal": "Identify which mechanism signatures (SNR-driven, BLER-with-stable-SNR, PRB-congestion, buffer/queue buildup, or combined interaction) best match the burst-on/burst-off behavior of upload degradation within WIN-000037 using time-aligned telemetry."
+      },
+      "metadata": {
+        "estimated_input_tokens": 2957
+      }
+    },
+    {
+      "stage": "03_telemetry_metrics",
+      "agent": "telemetry_metrics",
+      "timestamp": "2026-08-28T01:38:23.391101+05:30",
+      "input": {
+        "concepts": [
+          "UL_BLER (uplink block error rate)",
+          "UL_SNR (uplink signal-to-noise ratio)",
+          "UL_MCS (uplink modulation/coding indicator, time-resolved)",
+          "UL_PRB_utilization (uplink resource block utilization, time-resolved)",
+          "UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)"
+        ]
+      },
+      "output": {
+        "status": "completed",
+        "retrieval_type": "deterministic",
+        "catalog_version": "1.0",
+        "requested_concepts": [
+          "UL_BLER (uplink block error rate)",
+          "UL_SNR (uplink signal-to-noise ratio)",
+          "UL_MCS (uplink modulation/coding indicator, time-resolved)",
+          "UL_PRB_utilization (uplink resource block utilization, time-resolved)",
+          "UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)"
+        ],
+        "resolved_metrics": [
+          {
+            "requested_concept": "UL_SNR (uplink signal-to-noise ratio)",
+            "match_type": "token_overlap",
+            "score": 217,
+            "table": "telemetry_measurements",
+            "metric": "UL_SNR",
+            "concept": "uplink_signal_to_noise_ratio",
+            "unit": "dB",
+            "direction": "uplink",
+            "aggregation": null,
+            "meaning": "Uplink signal-to-noise ratio",
+            "supports": [
+              "uplink_signal_quality_assessment"
+            ],
+            "does_not_prove": [
+              "interference_source",
+              "physical_root_cause"
+            ],
+            "related_metrics": [
+              "UL_BLER",
+              "UL_MCS",
+              "RSRP"
+            ],
+            "caution": null
+          },
+          {
+            "requested_concept": "UL_SNR (uplink signal-to-noise ratio)",
+            "match_type": "token_overlap",
+            "score": 210,
+            "table": "telemetry_summary",
+            "metric": "min_ul_snr",
+            "concept": "uplink_signal_to_noise_ratio",
+            "unit": "dB",
+            "direction": null,
+            "aggregation": "minimum",
+            "meaning": "Minimum uplink SNR observed",
+            "supports": [],
+            "does_not_prove": [],
+            "related_metrics": [],
+            "caution": "Minimum alone does not establish persistent poor signal quality"
+          },
+          {
+            "requested_concept": "UL_SNR (uplink signal-to-noise ratio)",
+            "match_type": "token_overlap",
+            "score": 203,
+            "table": "telemetry_summary",
+            "metric": "avg_ul_snr",
+            "concept": "uplink_signal_to_noise_ratio",
+            "unit": "dB",
+            "direction": null,
+            "aggregation": "average",
+            "meaning": "Average uplink signal-to-noise ratio",
+            "supports": [
+              "uplink_signal_quality_assessment"
+            ],
+            "does_not_prove": [
+              "interference_source",
+              "physical_root_cause"
+            ],
+            "related_metrics": [],
+            "caution": null
+          },
+          {
+            "requested_concept": "UL_BLER (uplink block error rate)",
+            "match_type": "token_overlap",
+            "score": 186,
+            "table": "telemetry_measurements",
+            "metric": "UL_BLER",
+            "concept": "uplink_block_error_rate",
+            "unit": "ratio",
+            "direction": "uplink",
+            "aggregation": null,
+            "meaning": "Uplink block decoding error rate",
+            "supports": [
+              "uplink_reliability_impairment"
+            ],
+            "does_not_prove": [
+              "packet_loss",
+              "interference",
+              "coverage_failure",
+              "congestion",
+              "physical_root_cause"
+            ],
+            "related_metrics": [
+              "UL_MCS",
+              "UL_SNR",
+              "RSRP",
+              "PRB_Utilization_UL"
+            ],
+            "caution": null
+          },
+          {
+            "requested_concept": "UL_BLER (uplink block error rate)",
+            "match_type": "token_overlap",
+            "score": 180,
+            "table": "telemetry_summary",
+            "metric": "avg_ul_bler",
+            "concept": "uplink_block_error_rate",
+            "unit": "ratio",
+            "direction": null,
+            "aggregation": "average",
+            "meaning": "Average uplink block error rate",
+            "supports": [
+              "uplink_reliability_impairment"
+            ],
+            "does_not_prove": [
+              "packet_loss",
+              "interference",
+              "coverage_failure",
+              "physical_root_cause"
+            ],
+            "related_metrics": [],
+            "caution": null
+          },
+          {
+            "requested_concept": "UL_BLER (uplink block error rate)",
+            "match_type": "token_overlap",
+            "score": 170,
+            "table": "telemetry_summary",
+            "metric": "max_ul_bler",
+            "concept": "uplink_block_error_rate",
+            "unit": "ratio",
+            "direction": null,
+            "aggregation": "maximum",
+            "meaning": "Maximum uplink BLER observed in the window",
+            "supports": [],
+            "does_not_prove": [],
+            "related_metrics": [],
+            "caution": "Maximum alone does not establish persistence or intermittency"
+          },
+          {
+            "requested_concept": "UL_PRB_utilization (uplink resource block utilization, time-resolved)",
+            "match_type": "token_overlap",
+            "score": 141,
+            "table": "telemetry_summary",
+            "metric": "avg_prb_utilization_ul",
+            "concept": "uplink_resource_utilization",
+            "unit": "dataset_defined",
+            "direction": null,
+            "aggregation": "average",
+            "meaning": "Average uplink PRB utilization",
+            "supports": [
+              "uplink_resource_load_assessment"
+            ],
+            "does_not_prove": [
+              "congestion"
+            ],
+            "related_metrics": [],
+            "caution": "Unit/scale should be verified before applying numeric thresholds"
+          },
+          {
+            "requested_concept": "UL_MCS (uplink modulation/coding indicator, time-resolved)",
+            "match_type": "token_overlap",
+            "score": 135,
+            "table": "telemetry_summary",
+            "metric": "avg_ul_mcs",
+            "concept": "uplink_modulation_coding_scheme",
+            "unit": "index",
+            "direction": null,
+            "aggregation": "average",
+            "meaning": "Average uplink MCS",
+            "supports": [
+              "link_adaptation_behavior"
+            ],
+            "does_not_prove": [
+              "root_cause",
+              "interference"
+            ],
+            "related_metrics": [],
+            "caution": null
+          },
+          {
+            "requested_concept": "UL_MCS (uplink modulation/coding indicator, time-resolved)",
+            "match_type": "token_overlap",
+            "score": 135,
+            "table": "telemetry_measurements",
+            "metric": "UL_MCS",
+            "concept": "uplink_modulation_coding_scheme",
+            "unit": "index",
+            "direction": "uplink",
+            "aggregation": null,
+            "meaning": "Uplink modulation and coding selection",
+            "supports": [
+              "uplink_link_adaptation_assessment"
+            ],
+            "does_not_prove": [
+              "physical_root_cause"
+            ],
+            "related_metrics": [
+              "UL_BLER",
+              "UL_SNR",
+              "RSRP"
+            ],
+            "caution": null
+          },
+          {
+            "requested_concept": "UL_PRB_utilization (uplink resource block utilization, time-resolved)",
+            "match_type": "token_overlap",
+            "score": 135,
+            "table": "telemetry_measurements",
+            "metric": "PRB_Utilization_UL",
+            "concept": "uplink_resource_utilization",
+            "unit": "dataset_defined",
+            "direction": "uplink",
+            "aggregation": null,
+            "meaning": "Uplink PRB utilization measurement",
+            "supports": [
+              "uplink_resource_load_assessment",
+              "congestion_hypothesis_testing"
+            ],
+            "does_not_prove": [
+              "congestion"
+            ],
+            "related_metrics": [
+              "PRBs_UL_Current",
+              "UL_NPRB",
+              "UL_BLER",
+              "UL_MCS",
+              "TX_Bytes"
+            ],
+            "caution": "Verify scale before applying numeric congestion thresholds"
+          },
+          {
+            "requested_concept": "UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)",
+            "match_type": "token_overlap",
+            "score": 131,
+            "table": "telemetry_measurements",
+            "metric": "Estimated_UL_Buffer",
+            "concept": "uplink_buffer_estimate",
+            "unit": "dataset_defined",
+            "direction": "uplink",
+            "aggregation": null,
+            "meaning": "Estimated uplink buffer quantity",
+            "supports": [
+              "uplink_queue_or_buffer_pressure_assessment"
+            ],
+            "does_not_prove": [],
+            "related_metrics": [],
+            "caution": "Exact unit and generation semantics must be confirmed before defining thresholds"
+          },
+          {
+            "requested_concept": "UL_BLER (uplink block error rate)",
+            "match_type": "token_overlap",
+            "score": 116,
+            "table": "telemetry_measurements",
+            "metric": "DL_BLER",
+            "concept": "downlink_block_error_rate",
+            "unit": "ratio",
+            "direction": "downlink",
+            "aggregation": null,
+            "meaning": "Downlink block decoding error rate",
+            "supports": [
+              "downlink_reliability_impairment"
+            ],
+            "does_not_prove": [
+              "packet_loss",
+              "interference",
+              "coverage_failure",
+              "congestion",
+              "physical_root_cause"
+            ],
+            "related_metrics": [
+              "DL_MCS",
+              "RSRP",
+              "PRB_Utilization_DL"
+            ],
+            "caution": null
+          }
+        ],
+        "unresolved_concepts": [],
+        "cross_metric_guidance": []
+      },
+      "metadata": {}
+    },
+    {
+      "stage": "04_sql_planner",
+      "agent": "sql",
+      "timestamp": "2026-08-28T01:38:28.715312+05:30",
+      "input": {
+        "model_profile": "sql",
+        "schema": "telemetry_measurements(window_id VARCHAR, sample_index BIGINT, event_timestamp TIMESTAMP, RSRP DOUBLE, DL_BLER DOUBLE, DL_MCS DOUBLE, UL_BLER DOUBLE, UL_MCS DOUBLE, UL_NPRB DOUBLE, UL_SNR DOUBLE, TX_Bytes DOUBLE, RX_Bytes DOUBLE, Estimated_UL_Buffer DOUBLE, PRBs_DL_Current DOUBLE, PRBs_UL_Current DOUBLE, PRB_Utilization_DL DOUBLE, PRB_Utilization_UL DOUBLE, UL_Protocol VARCHAR, UL_NumberOfPackets DOUBLE, DL_Protocol VARCHAR, DL_NumberOfPackets DOUBLE)\ntelemetry_summary(window_id VARCHAR, start_time TIMESTAMP, end_time TIMESTAMP, sample_count BIGINT, avg_rsrp DOUBLE, min_rsrp DOUBLE, max_rsrp DOUBLE, avg_dl_bler DOUBLE, max_dl_bler DOUBLE, avg_ul_bler DOUBLE, max_ul_bler DOUBLE, avg_ul_snr DOUBLE, min_ul_snr DOUBLE, avg_dl_mcs DOUBLE, avg_ul_mcs DOUBLE, avg_prb_utilization_dl DOUBLE, avg_prb_utilization_ul DOUBLE, avg_tx_bytes DOUBLE, avg_rx_bytes DOUBLE)\ntelemetry_windows(window_id VARCHAR, start_time TIMESTAMP, end_time TIMESTAMP, sampling_rate BIGINT, zone VARCHAR, application VARCHAR, mobility VARCHAR, congestion VARCHAR, anomaly_present VARCHAR)",
+        "full_prompt": "\n\nROLE|DUCKDB_SQL_PLANNER\n\nTranslate the analytical question into ONE read-only DuckDB query.\n\nUse only the supplied schema.\n\nSTRICT RULES|\n\n- DuckDB SQL only.\n- SELECT or WITH...SELECT only.\n- Never invent tables.\n- Never invent columns.\n- Never SELECT *.\n- Prefer the simplest query that answers the question.\n- Prefer one SELECT where possible.\n- Use CTEs only when necessary.\n- Never place a window function inside an aggregate expression.\n- Never invent functions.\n- Never calculate evidence that was not requested.\n- Never manufacture one KPI from another KPI.\n\nSEMANTIC SAFETY|\n\nDo not reinterpret a metric as another metric.\n\nExamples:\n- BLER is not packet loss.\n- RX_Bytes is not automatically throughput.\n- TX_Bytes is not automatically throughput.\n- PRB utilization is not congestion unless the evidence supports it.\n- correlation is not causation.\n\nIf the requested metric does not exist in the schema and cannot be\ncalculated directly from valid schema fields, return can_answer=false.\n\nDUCKDB SYNTAX|\n\nAverage:\nAVG(column)\n\nMinimum:\nMIN(column)\n\nMaximum:\nMAX(column)\n\nPercentile:\nquantile_cont(column, 0.95)\n\nCorrelation:\ncorr(column_a, column_b)\n\nConditional percentage:\n100.0 * SUM(CASE WHEN condition THEN 1 ELSE 0 END) / COUNT(*)\n\nEqual sample buckets:\nNTILE(8) OVER (ORDER BY sample_index)\n\nFor window functions:\ncalculate the window function in a CTE and aggregate it in the outer\nquery.\n\n\n\nSQL ENGINEERING RULES|\n\nGenerate one focused DuckDB SELECT query.\n\nUse only the supplied schema.\n\nUse only columns that exist.\n\nPreserve explicit window_id scope.\n\nWhen querying telemetry_measurements for a named window, filter\ntelemetry_measurements.window_id directly.\n\nDo not use information_schema.\n\nDo not use SQL for schema discovery.\n\nDo not manufacture throughput from TX_Bytes or RX_Bytes unless their\ncounter/time semantics are explicitly established.\n\nDo not manufacture packet loss or retransmission counters.\n\nDo not create coarse temporal buckets unless the investigation plan\nrequires them.\n\nFor short/high-frequency telemetry windows, prefer sample_index and\nevent_timestamp so temporal behavior is not destroyed.\n\nPrefer simple SQL.\n\nDo not try to perform the entire RCA in one SQL statement.\n\nIf the schema cannot answer the focused evidence request, return\ncan_answer=false with the precise reason.\n\n\nINCIDENT|\n\n{\"incident_id\":\"INC-COMPLEX-001\",\"problem_statement\":\"Users report intermittent uplink performance degradation during WIN-000037. Degradation is not continuous; upload performance drops sharply for short periods and then recovers.\",\"investigation_goal\":\"Determine which telemetry mechanism(s) are most consistent with the intermittent uplink performance degradation during WIN-000037 (e.g., poor signal quality, radio reliability degradation, resource congestion, buffering/traffic-pressure effects, or an interaction).\",\"symptoms\":[\"Users report intermittent uplink performance degradation during WIN-000037.\",\"Upload performance drops sharply for short periods and then recovers (degradation is not continuous).\",\"UL_BLER may increase during some degraded periods.\",\"UL_SNR may fluctuate, but it is unclear whether signal quality consistently explains the degradation.\",\"UL_MCS appears unstable.\",\"Uplink PRB utilization may increase during parts of the window.\",\"Buffer buildup may also be occurring.\"],\"window_ids\":[\"WIN-000037\"],\"explicit_hypotheses\":[\"poor uplink signal quality\",\"uplink radio reliability degradation\",\"uplink resource congestion\",\"buffering or traffic-pressure effects\",\"interaction between multiple mechanisms\",\"another telemetry mechanism\"],\"constraints\":[\"Do not assume that correlation between two metrics proves causation.\",\"Do not investigate beyond what is explicitly requested: identify evidence supporting/contradicting mechanisms and what telemetry should be examined.\",\"Do not force a conclusion if available telemetry cannot distinguish mechanisms; identify evidence gaps instead.\"],\"missing_context\":[\"Whether UL_SNR consistently explains degradation across all degraded periods.\",\"Whether UL_MCS instability correlates with BLER increases and/or resource/queue indicators in a way that distinguishes between signal-quality vs reliability vs congestion effects.\",\"Whether buffer buildup timing aligns with PRB utilization increases and/or the onset/recovery of performance drops.\",\"Specific telemetry values/thresholds for UL_BLER, UL_SNR, UL_MCS, UL PRB utilization, and buffering/queue metrics during degraded vs recovered periods.\",\"Whether any additional telemetry mechanisms are available (e.g., scheduling/queue delay indicators, retransmission counts) to distinguish radio reliability vs congestion/buffering effects.\"]}\n\nTELEMETRY INVESTIGATION PLAN|\n\n{\"incident_intent\":\"Use time-resolved uplink telemetry from WIN-000037 to determine which impairment mechanism(s) best match intermittent upload performance drops: signal-quality, radio reliability, resource congestion, buffering/traffic pressure, or an interaction—without assuming causation.\",\"intent_clarity\":\"clear\",\"hypotheses\":[{\"hypothesis\":\"Poor uplink signal quality (coverage/interference) drives intermittent BLER increases and link adaptation instability.\",\"evidence_needed\":[\"During degraded bursts, UL_SNR shows clear short-time dips (not just average degradation).\",\"UL_MCS changes/instability during bursts are consistent with adaptation to worse link conditions (e.g., lower/lurching MCS around SNR dips).\",\"UL_BLER elevates during the same burst windows as UL_SNR dips (temporal alignment).\",\"UL_PRB_utilization and the buffer/queue metric do not show a primary spike/step-change at the same times (or are near baseline compared to BLER/SNR behavior).\"]},{\"hypothesis\":\"Uplink radio reliability degradation (errors increase) occurs without strong signal-quality deterioration (e.g., reliability faults rather than pure SNR/coverage).\",\"evidence_needed\":[\"UL_BLER spikes during degraded bursts while UL_SNR remains comparatively stable (no matching SNR dip magnitude/pattern).\",\"UL_MCS does not show the degree of adaptation shift expected from sustained SNR degradation (stability relative to BLER spikes).\",\"UL_PRB_utilization and buffer/queue do not rise in a way that tracks the BLER spikes (reducing the likelihood of congestion/buffering as primary driver).\",\"Recovery in observed upload performance coincides with BLER returning to normal even if UL_SNR does not exhibit the same burst-like pattern.\"]},{\"hypothesis\":\"Uplink resource congestion/scheduling pressure causes intermittent service degradation (PRB availability pressure, not primarily link quality).\",\"evidence_needed\":[\"UL_PRB_utilization shows sharp burst-like increases that align with upload performance drops.\",\"UL_SNR does not consistently deteriorate during the most severe performance drops (lack of sustained SNR dip alignment).\",\"UL_MCS behavior does not fully explain the drop (i.e., changes in MCS are not the sole driver of throughput impairment compared to PRB pressure).\",\"If available, the buffer/queue metric increases or queueing increases during the same congested bursts (alignment with service-delay symptoms).\"]},{\"hypothesis\":\"Buffering/traffic-pressure (queue buildup) causes intermittent upload slowdowns; radio conditions may be secondary.\",\"evidence_needed\":[\"Buffer/queue indicator shows burst-like growth starting near the onset of upload degradation windows.\",\"During degradation, UL_SNR remains relatively stable compared to the sharpness of the queue increase (signal quality not the primary pattern).\",\"UL_PRB_utilization is not required to spike as strongly as the buffer/queue metric (queueing can rise even with moderate PRB utilization if service rate lags demand).\",\"During recovery, the buffer/queue metric drains and performance improves without requiring a corresponding BLER/SNR pattern to fully explain recovery.\"]},{\"hypothesis\":\"Interaction between mechanisms (e.g., intermittent worse signal quality plus elevated resource/queue pressure) amplifies BLER/MCS instability and throughput drops.\",\"evidence_needed\":[\"The worst bursts show simultaneous impairing conditions (e.g., UL_SNR deterioration and elevated UL_PRB_utilization or queue growth) more than during milder degraded periods.\",\"Some degraded bursts are explainable by one mechanism alone (e.g., BLER up with modest PRB change), while others require the combined pattern—indicating intermittency from interactions.\",\"BLER peaks (and/or most severe MCS instability) are strongest when both (signal-quality pressure AND resource/queue pressure) are present together (temporal comparison across bursts).\",\"Recovery requires improvement in both contributing conditions (e.g., SNR rebounds and queue drains), rather than only one changing.\"]}],\"recommended_sequence\":[\"telemetry_patterns\",\"telemetry_schema\",\"telemetry_metrics\",\"telemetry_sql\"],\"metric_concepts\":[\"UL_BLER (uplink block error rate)\",\"UL_SNR (uplink signal-to-noise ratio)\",\"UL_MCS (uplink modulation/coding indicator, time-resolved)\",\"UL_PRB_utilization (uplink resource block utilization, time-resolved)\",\"UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)\"],\"analysis_granularity\":\"native\",\"evidence_goal\":\"Identify which mechanism signatures (SNR-driven, BLER-with-stable-SNR, PRB-congestion, buffer/queue buildup, or combined interaction) best match the burst-on/burst-off behavior of upload degradation within WIN-000037 using time-aligned telemetry.\"}\n\nRETRIEVED DOMAIN INTELLIGENCE|\n\n{\"telemetry_metrics\":{\"status\":\"completed\",\"retrieval_type\":\"deterministic\",\"catalog_version\":\"1.0\",\"requested_concepts\":[\"UL_BLER (uplink block error rate)\",\"UL_SNR (uplink signal-to-noise ratio)\",\"UL_MCS (uplink modulation/coding indicator, time-resolved)\",\"UL_PRB_utilization (uplink resource block utilization, time-resolved)\",\"UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)\"],\"resolved_metrics\":[{\"requested_concept\":\"UL_SNR (uplink signal-to-noise ratio)\",\"match_type\":\"token_overlap\",\"score\":217,\"table\":\"telemetry_measurements\",\"metric\":\"UL_SNR\",\"concept\":\"uplink_signal_to_noise_ratio\",\"unit\":\"dB\",\"direction\":\"uplink\",\"aggregation\":null,\"meaning\":\"Uplink signal-to-noise ratio\",\"supports\":[\"uplink_signal_quality_assessment\"],\"does_not_prove\":[\"interference_source\",\"physical_root_cause\"],\"related_metrics\":[\"UL_BLER\",\"UL_MCS\",\"RSRP\"],\"caution\":null},{\"requested_concept\":\"UL_SNR (uplink signal-to-noise ratio)\",\"match_type\":\"token_overlap\",\"score\":210,\"table\":\"telemetry_summary\",\"metric\":\"min_ul_snr\",\"concept\":\"uplink_signal_to_noise_ratio\",\"unit\":\"dB\",\"direction\":null,\"aggregation\":\"minimum\",\"meaning\":\"Minimum uplink SNR observed\",\"supports\":[],\"does_not_prove\":[],\"related_metrics\":[],\"caution\":\"Minimum alone does not establish persistent poor signal quality\"},{\"requested_concept\":\"UL_SNR (uplink signal-to-noise ratio)\",\"match_type\":\"token_overlap\",\"score\":203,\"table\":\"telemetry_summary\",\"metric\":\"avg_ul_snr\",\"concept\":\"uplink_signal_to_noise_ratio\",\"unit\":\"dB\",\"direction\":null,\"aggregation\":\"average\",\"meaning\":\"Average uplink signal-to-noise ratio\",\"supports\":[\"uplink_signal_quality_assessment\"],\"does_not_prove\":[\"interference_source\",\"physical_root_cause\"],\"related_metrics\":[],\"caution\":null},{\"requested_concept\":\"UL_BLER (uplink block error rate)\",\"match_type\":\"token_overlap\",\"score\":186,\"table\":\"telemetry_measurements\",\"metric\":\"UL_BLER\",\"concept\":\"uplink_block_error_rate\",\"unit\":\"ratio\",\"direction\":\"uplink\",\"aggregation\":null,\"meaning\":\"Uplink block decoding error rate\",\"supports\":[\"uplink_reliability_impairment\"],\"does_not_prove\":[\"packet_loss\",\"interference\",\"coverage_failure\",\"congestion\",\"physical_root_cause\"],\"related_metrics\":[\"UL_MCS\",\"UL_SNR\",\"RSRP\",\"PRB_Utilization_UL\"],\"caution\":null},{\"requested_concept\":\"UL_BLER (uplink block error rate)\",\"match_type\":\"token_overlap\",\"score\":180,\"table\":\"telemetry_summary\",\"metric\":\"avg_ul_bler\",\"concept\":\"uplink_block_error_rate\",\"unit\":\"ratio\",\"direction\":null,\"aggregation\":\"average\",\"meaning\":\"Average uplink block error rate\",\"supports\":[\"uplink_reliability_impairment\"],\"does_not_prove\":[\"packet_loss\",\"interference\",\"coverage_failure\",\"physical_root_cause\"],\"related_metrics\":[],\"caution\":null},{\"requested_concept\":\"UL_BLER (uplink block error rate)\",\"match_type\":\"token_overlap\",\"score\":170,\"table\":\"telemetry_summary\",\"metric\":\"max_ul_bler\",\"concept\":\"uplink_block_error_rate\",\"unit\":\"ratio\",\"direction\":null,\"aggregation\":\"maximum\",\"meaning\":\"Maximum uplink BLER observed in the window\",\"supports\":[],\"does_not_prove\":[],\"related_metrics\":[],\"caution\":\"Maximum alone does not establish persistence or intermittency\"},{\"requested_concept\":\"UL_PRB_utilization (uplink resource block utilization, time-resolved)\",\"match_type\":\"token_overlap\",\"score\":141,\"table\":\"telemetry_summary\",\"metric\":\"avg_prb_utilization_ul\",\"concept\":\"uplink_resource_utilization\",\"unit\":\"dataset_defined\",\"direction\":null,\"aggregation\":\"average\",\"meaning\":\"Average uplink PRB utilization\",\"supports\":[\"uplink_resource_load_assessment\"],\"does_not_prove\":[\"congestion\"],\"related_metrics\":[],\"caution\":\"Unit/scale should be verified before applying numeric thresholds\"},{\"requested_concept\":\"UL_MCS (uplink modulation/coding indicator, time-resolved)\",\"match_type\":\"token_overlap\",\"score\":135,\"table\":\"telemetry_summary\",\"metric\":\"avg_ul_mcs\",\"concept\":\"uplink_modulation_coding_scheme\",\"unit\":\"index\",\"direction\":null,\"aggregation\":\"average\",\"meaning\":\"Average uplink MCS\",\"supports\":[\"link_adaptation_behavior\"],\"does_not_prove\":[\"root_cause\",\"interference\"],\"related_metrics\":[],\"caution\":null},{\"requested_concept\":\"UL_MCS (uplink modulation/coding indicator, time-resolved)\",\"match_type\":\"token_overlap\",\"score\":135,\"table\":\"telemetry_measurements\",\"metric\":\"UL_MCS\",\"concept\":\"uplink_modulation_coding_scheme\",\"unit\":\"index\",\"direction\":\"uplink\",\"aggregation\":null,\"meaning\":\"Uplink modulation and coding selection\",\"supports\":[\"uplink_link_adaptation_assessment\"],\"does_not_prove\":[\"physical_root_cause\"],\"related_metrics\":[\"UL_BLER\",\"UL_SNR\",\"RSRP\"],\"caution\":null},{\"requested_concept\":\"UL_PRB_utilization (uplink resource block utilization, time-resolved)\",\"match_type\":\"token_overlap\",\"score\":135,\"table\":\"telemetry_measurements\",\"metric\":\"PRB_Utilization_UL\",\"concept\":\"uplink_resource_utilization\",\"unit\":\"dataset_defined\",\"direction\":\"uplink\",\"aggregation\":null,\"meaning\":\"Uplink PRB utilization measurement\",\"supports\":[\"uplink_resource_load_assessment\",\"congestion_hypothesis_testing\"],\"does_not_prove\":[\"congestion\"],\"related_metrics\":[\"PRBs_UL_Current\",\"UL_NPRB\",\"UL_BLER\",\"UL_MCS\",\"TX_Bytes\"],\"caution\":\"Verify scale before applying numeric congestion thresholds\"},{\"requested_concept\":\"UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)\",\"match_type\":\"token_overlap\",\"score\":131,\"table\":\"telemetry_measurements\",\"metric\":\"Estimated_UL_Buffer\",\"concept\":\"uplink_buffer_estimate\",\"unit\":\"dataset_defined\",\"direction\":\"uplink\",\"aggregation\":null,\"meaning\":\"Estimated uplink buffer quantity\",\"supports\":[\"uplink_queue_or_buffer_pressure_assessment\"],\"does_not_prove\":[],\"related_metrics\":[],\"caution\":\"Exact unit and generation semantics must be confirmed before defining thresholds\"},{\"requested_concept\":\"UL_BLER (uplink block error rate)\",\"match_type\":\"token_overlap\",\"score\":116,\"table\":\"telemetry_measurements\",\"metric\":\"DL_BLER\",\"concept\":\"downlink_block_error_rate\",\"unit\":\"ratio\",\"direction\":\"downlink\",\"aggregation\":null,\"meaning\":\"Downlink block decoding error rate\",\"supports\":[\"downlink_reliability_impairment\"],\"does_not_prove\":[\"packet_loss\",\"interference\",\"coverage_failure\",\"congestion\",\"physical_root_cause\"],\"related_metrics\":[\"DL_MCS\",\"RSRP\",\"PRB_Utilization_DL\"],\"caution\":null}],\"unresolved_concepts\":[],\"cross_metric_guidance\":[]}}\n\nDATABASE SCHEMA|\n\ntelemetry_measurements(window_id VARCHAR, sample_index BIGINT, event_timestamp TIMESTAMP, RSRP DOUBLE, DL_BLER DOUBLE, DL_MCS DOUBLE, UL_BLER DOUBLE, UL_MCS DOUBLE, UL_NPRB DOUBLE, UL_SNR DOUBLE, TX_Bytes DOUBLE, RX_Bytes DOUBLE, Estimated_UL_Buffer DOUBLE, PRBs_DL_Current DOUBLE, PRBs_UL_Current DOUBLE, PRB_Utilization_DL DOUBLE, PRB_Utilization_UL DOUBLE, UL_Protocol VARCHAR, UL_NumberOfPackets DOUBLE, DL_Protocol VARCHAR, DL_NumberOfPackets DOUBLE)\ntelemetry_summary(window_id VARCHAR, start_time TIMESTAMP, end_time TIMESTAMP, sample_count BIGINT, avg_rsrp DOUBLE, min_rsrp DOUBLE, max_rsrp DOUBLE, avg_dl_bler DOUBLE, max_dl_bler DOUBLE, avg_ul_bler DOUBLE, max_ul_bler DOUBLE, avg_ul_snr DOUBLE, min_ul_snr DOUBLE, avg_dl_mcs DOUBLE, avg_ul_mcs DOUBLE, avg_prb_utilization_dl DOUBLE, avg_prb_utilization_ul DOUBLE, avg_tx_bytes DOUBLE, avg_rx_bytes DOUBLE)\ntelemetry_windows(window_id VARCHAR, start_time TIMESTAMP, end_time TIMESTAMP, sampling_rate BIGINT, zone VARCHAR, application VARCHAR, mobility VARCHAR, congestion VARCHAR, anomaly_present VARCHAR)\n\nFOCUSED OPERATIONAL EVIDENCE GOAL|\n\nIdentify which mechanism signatures (SNR-driven, BLER-with-stable-SNR, PRB-congestion, buffer/queue buildup, or combined interaction) best match the burst-on/burst-off behavior of upload degradation within WIN-000037 using time-aligned telemetry.\n",
+        "parsed_incident": {
+          "incident_id": "INC-COMPLEX-001",
+          "problem_statement": "Users report intermittent uplink performance degradation during WIN-000037. Degradation is not continuous; upload performance drops sharply for short periods and then recovers.",
+          "investigation_goal": "Determine which telemetry mechanism(s) are most consistent with the intermittent uplink performance degradation during WIN-000037 (e.g., poor signal quality, radio reliability degradation, resource congestion, buffering/traffic-pressure effects, or an interaction).",
+          "symptoms": [
+            "Users report intermittent uplink performance degradation during WIN-000037.",
+            "Upload performance drops sharply for short periods and then recovers (degradation is not continuous).",
+            "UL_BLER may increase during some degraded periods.",
+            "UL_SNR may fluctuate, but it is unclear whether signal quality consistently explains the degradation.",
+            "UL_MCS appears unstable.",
+            "Uplink PRB utilization may increase during parts of the window.",
+            "Buffer buildup may also be occurring."
+          ],
+          "window_ids": [
+            "WIN-000037"
+          ],
+          "explicit_hypotheses": [
+            "poor uplink signal quality",
+            "uplink radio reliability degradation",
+            "uplink resource congestion",
+            "buffering or traffic-pressure effects",
+            "interaction between multiple mechanisms",
+            "another telemetry mechanism"
+          ],
+          "constraints": [
+            "Do not assume that correlation between two metrics proves causation.",
+            "Do not investigate beyond what is explicitly requested: identify evidence supporting/contradicting mechanisms and what telemetry should be examined.",
+            "Do not force a conclusion if available telemetry cannot distinguish mechanisms; identify evidence gaps instead."
+          ],
+          "missing_context": [
+            "Whether UL_SNR consistently explains degradation across all degraded periods.",
+            "Whether UL_MCS instability correlates with BLER increases and/or resource/queue indicators in a way that distinguishes between signal-quality vs reliability vs congestion effects.",
+            "Whether buffer buildup timing aligns with PRB utilization increases and/or the onset/recovery of performance drops.",
+            "Specific telemetry values/thresholds for UL_BLER, UL_SNR, UL_MCS, UL PRB utilization, and buffering/queue metrics during degraded vs recovered periods.",
+            "Whether any additional telemetry mechanisms are available (e.g., scheduling/queue delay indicators, retransmission counts) to distinguish radio reliability vs congestion/buffering effects."
+          ]
+        },
+        "telemetry_plan": {
+          "incident_intent": "Use time-resolved uplink telemetry from WIN-000037 to determine which impairment mechanism(s) best match intermittent upload performance drops: signal-quality, radio reliability, resource congestion, buffering/traffic pressure, or an interaction—without assuming causation.",
+          "intent_clarity": "clear",
+          "hypotheses": [
+            {
+              "hypothesis": "Poor uplink signal quality (coverage/interference) drives intermittent BLER increases and link adaptation instability.",
+              "evidence_needed": [
+                "During degraded bursts, UL_SNR shows clear short-time dips (not just average degradation).",
+                "UL_MCS changes/instability during bursts are consistent with adaptation to worse link conditions (e.g., lower/lurching MCS around SNR dips).",
+                "UL_BLER elevates during the same burst windows as UL_SNR dips (temporal alignment).",
+                "UL_PRB_utilization and the buffer/queue metric do not show a primary spike/step-change at the same times (or are near baseline compared to BLER/SNR behavior)."
+              ]
+            },
+            {
+              "hypothesis": "Uplink radio reliability degradation (errors increase) occurs without strong signal-quality deterioration (e.g., reliability faults rather than pure SNR/coverage).",
+              "evidence_needed": [
+                "UL_BLER spikes during degraded bursts while UL_SNR remains comparatively stable (no matching SNR dip magnitude/pattern).",
+                "UL_MCS does not show the degree of adaptation shift expected from sustained SNR degradation (stability relative to BLER spikes).",
+                "UL_PRB_utilization and buffer/queue do not rise in a way that tracks the BLER spikes (reducing the likelihood of congestion/buffering as primary driver).",
+                "Recovery in observed upload performance coincides with BLER returning to normal even if UL_SNR does not exhibit the same burst-like pattern."
+              ]
+            },
+            {
+              "hypothesis": "Uplink resource congestion/scheduling pressure causes intermittent service degradation (PRB availability pressure, not primarily link quality).",
+              "evidence_needed": [
+                "UL_PRB_utilization shows sharp burst-like increases that align with upload performance drops.",
+                "UL_SNR does not consistently deteriorate during the most severe performance drops (lack of sustained SNR dip alignment).",
+                "UL_MCS behavior does not fully explain the drop (i.e., changes in MCS are not the sole driver of throughput impairment compared to PRB pressure).",
+                "If available, the buffer/queue metric increases or queueing increases during the same congested bursts (alignment with service-delay symptoms)."
+              ]
+            },
+            {
+              "hypothesis": "Buffering/traffic-pressure (queue buildup) causes intermittent upload slowdowns; radio conditions may be secondary.",
+              "evidence_needed": [
+                "Buffer/queue indicator shows burst-like growth starting near the onset of upload degradation windows.",
+                "During degradation, UL_SNR remains relatively stable compared to the sharpness of the queue increase (signal quality not the primary pattern).",
+                "UL_PRB_utilization is not required to spike as strongly as the buffer/queue metric (queueing can rise even with moderate PRB utilization if service rate lags demand).",
+                "During recovery, the buffer/queue metric drains and performance improves without requiring a corresponding BLER/SNR pattern to fully explain recovery."
+              ]
+            },
+            {
+              "hypothesis": "Interaction between mechanisms (e.g., intermittent worse signal quality plus elevated resource/queue pressure) amplifies BLER/MCS instability and throughput drops.",
+              "evidence_needed": [
+                "The worst bursts show simultaneous impairing conditions (e.g., UL_SNR deterioration and elevated UL_PRB_utilization or queue growth) more than during milder degraded periods.",
+                "Some degraded bursts are explainable by one mechanism alone (e.g., BLER up with modest PRB change), while others require the combined pattern—indicating intermittency from interactions.",
+                "BLER peaks (and/or most severe MCS instability) are strongest when both (signal-quality pressure AND resource/queue pressure) are present together (temporal comparison across bursts).",
+                "Recovery requires improvement in both contributing conditions (e.g., SNR rebounds and queue drains), rather than only one changing."
+              ]
+            }
+          ],
+          "recommended_sequence": [
+            "telemetry_patterns",
+            "telemetry_schema",
+            "telemetry_metrics",
+            "telemetry_sql"
+          ],
+          "metric_concepts": [
+            "UL_BLER (uplink block error rate)",
+            "UL_SNR (uplink signal-to-noise ratio)",
+            "UL_MCS (uplink modulation/coding indicator, time-resolved)",
+            "UL_PRB_utilization (uplink resource block utilization, time-resolved)",
+            "UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)"
+          ],
+          "analysis_granularity": "native",
+          "evidence_goal": "Identify which mechanism signatures (SNR-driven, BLER-with-stable-SNR, PRB-congestion, buffer/queue buildup, or combined interaction) best match the burst-on/burst-off behavior of upload degradation within WIN-000037 using time-aligned telemetry."
+        },
+        "retrieved_intelligence": {
+          "telemetry_metrics": {
+            "input": {
+              "concepts": [
+                "UL_BLER (uplink block error rate)",
+                "UL_SNR (uplink signal-to-noise ratio)",
+                "UL_MCS (uplink modulation/coding indicator, time-resolved)",
+                "UL_PRB_utilization (uplink resource block utilization, time-resolved)",
+                "UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)"
+              ]
+            },
+            "output": {
+              "status": "completed",
+              "retrieval_type": "deterministic",
+              "catalog_version": "1.0",
+              "requested_concepts": [
+                "UL_BLER (uplink block error rate)",
+                "UL_SNR (uplink signal-to-noise ratio)",
+                "UL_MCS (uplink modulation/coding indicator, time-resolved)",
+                "UL_PRB_utilization (uplink resource block utilization, time-resolved)",
+                "UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)"
+              ],
+              "resolved_metrics": [
+                {
+                  "requested_concept": "UL_SNR (uplink signal-to-noise ratio)",
+                  "match_type": "token_overlap",
+                  "score": 217,
+                  "table": "telemetry_measurements",
+                  "metric": "UL_SNR",
+                  "concept": "uplink_signal_to_noise_ratio",
+                  "unit": "dB",
+                  "direction": "uplink",
+                  "aggregation": null,
+                  "meaning": "Uplink signal-to-noise ratio",
+                  "supports": [
+                    "uplink_signal_quality_assessment"
+                  ],
+                  "does_not_prove": [
+                    "interference_source",
+                    "physical_root_cause"
+                  ],
+                  "related_metrics": [
+                    "UL_BLER",
+                    "UL_MCS",
+                    "RSRP"
+                  ],
+                  "caution": null
+                },
+                {
+                  "requested_concept": "UL_SNR (uplink signal-to-noise ratio)",
+                  "match_type": "token_overlap",
+                  "score": 210,
+                  "table": "telemetry_summary",
+                  "metric": "min_ul_snr",
+                  "concept": "uplink_signal_to_noise_ratio",
+                  "unit": "dB",
+                  "direction": null,
+                  "aggregation": "minimum",
+                  "meaning": "Minimum uplink SNR observed",
+                  "supports": [],
+                  "does_not_prove": [],
+                  "related_metrics": [],
+                  "caution": "Minimum alone does not establish persistent poor signal quality"
+                },
+                {
+                  "requested_concept": "UL_SNR (uplink signal-to-noise ratio)",
+                  "match_type": "token_overlap",
+                  "score": 203,
+                  "table": "telemetry_summary",
+                  "metric": "avg_ul_snr",
+                  "concept": "uplink_signal_to_noise_ratio",
+                  "unit": "dB",
+                  "direction": null,
+                  "aggregation": "average",
+                  "meaning": "Average uplink signal-to-noise ratio",
+                  "supports": [
+                    "uplink_signal_quality_assessment"
+                  ],
+                  "does_not_prove": [
+                    "interference_source",
+                    "physical_root_cause"
+                  ],
+                  "related_metrics": [],
+                  "caution": null
+                },
+                {
+                  "requested_concept": "UL_BLER (uplink block error rate)",
+                  "match_type": "token_overlap",
+                  "score": 186,
+                  "table": "telemetry_measurements",
+                  "metric": "UL_BLER",
+                  "concept": "uplink_block_error_rate",
+                  "unit": "ratio",
+                  "direction": "uplink",
+                  "aggregation": null,
+                  "meaning": "Uplink block decoding error rate",
+                  "supports": [
+                    "uplink_reliability_impairment"
+                  ],
+                  "does_not_prove": [
+                    "packet_loss",
+                    "interference",
+                    "coverage_failure",
+                    "congestion",
+                    "physical_root_cause"
+                  ],
+                  "related_metrics": [
+                    "UL_MCS",
+                    "UL_SNR",
+                    "RSRP",
+                    "PRB_Utilization_UL"
+                  ],
+                  "caution": null
+                },
+                {
+                  "requested_concept": "UL_BLER (uplink block error rate)",
+                  "match_type": "token_overlap",
+                  "score": 180,
+                  "table": "telemetry_summary",
+                  "metric": "avg_ul_bler",
+                  "concept": "uplink_block_error_rate",
+                  "unit": "ratio",
+                  "direction": null,
+                  "aggregation": "average",
+                  "meaning": "Average uplink block error rate",
+                  "supports": [
+                    "uplink_reliability_impairment"
+                  ],
+                  "does_not_prove": [
+                    "packet_loss",
+                    "interference",
+                    "coverage_failure",
+                    "physical_root_cause"
+                  ],
+                  "related_metrics": [],
+                  "caution": null
+                },
+                {
+                  "requested_concept": "UL_BLER (uplink block error rate)",
+                  "match_type": "token_overlap",
+                  "score": 170,
+                  "table": "telemetry_summary",
+                  "metric": "max_ul_bler",
+                  "concept": "uplink_block_error_rate",
+                  "unit": "ratio",
+                  "direction": null,
+                  "aggregation": "maximum",
+                  "meaning": "Maximum uplink BLER observed in the window",
+                  "supports": [],
+                  "does_not_prove": [],
+                  "related_metrics": [],
+                  "caution": "Maximum alone does not establish persistence or intermittency"
+                },
+                {
+                  "requested_concept": "UL_PRB_utilization (uplink resource block utilization, time-resolved)",
+                  "match_type": "token_overlap",
+                  "score": 141,
+                  "table": "telemetry_summary",
+                  "metric": "avg_prb_utilization_ul",
+                  "concept": "uplink_resource_utilization",
+                  "unit": "dataset_defined",
+                  "direction": null,
+                  "aggregation": "average",
+                  "meaning": "Average uplink PRB utilization",
+                  "supports": [
+                    "uplink_resource_load_assessment"
+                  ],
+                  "does_not_prove": [
+                    "congestion"
+                  ],
+                  "related_metrics": [],
+                  "caution": "Unit/scale should be verified before applying numeric thresholds"
+                },
+                {
+                  "requested_concept": "UL_MCS (uplink modulation/coding indicator, time-resolved)",
+                  "match_type": "token_overlap",
+                  "score": 135,
+                  "table": "telemetry_summary",
+                  "metric": "avg_ul_mcs",
+                  "concept": "uplink_modulation_coding_scheme",
+                  "unit": "index",
+                  "direction": null,
+                  "aggregation": "average",
+                  "meaning": "Average uplink MCS",
+                  "supports": [
+                    "link_adaptation_behavior"
+                  ],
+                  "does_not_prove": [
+                    "root_cause",
+                    "interference"
+                  ],
+                  "related_metrics": [],
+                  "caution": null
+                },
+                {
+                  "requested_concept": "UL_MCS (uplink modulation/coding indicator, time-resolved)",
+                  "match_type": "token_overlap",
+                  "score": 135,
+                  "table": "telemetry_measurements",
+                  "metric": "UL_MCS",
+                  "concept": "uplink_modulation_coding_scheme",
+                  "unit": "index",
+                  "direction": "uplink",
+                  "aggregation": null,
+                  "meaning": "Uplink modulation and coding selection",
+                  "supports": [
+                    "uplink_link_adaptation_assessment"
+                  ],
+                  "does_not_prove": [
+                    "physical_root_cause"
+                  ],
+                  "related_metrics": [
+                    "UL_BLER",
+                    "UL_SNR",
+                    "RSRP"
+                  ],
+                  "caution": null
+                },
+                {
+                  "requested_concept": "UL_PRB_utilization (uplink resource block utilization, time-resolved)",
+                  "match_type": "token_overlap",
+                  "score": 135,
+                  "table": "telemetry_measurements",
+                  "metric": "PRB_Utilization_UL",
+                  "concept": "uplink_resource_utilization",
+                  "unit": "dataset_defined",
+                  "direction": "uplink",
+                  "aggregation": null,
+                  "meaning": "Uplink PRB utilization measurement",
+                  "supports": [
+                    "uplink_resource_load_assessment",
+                    "congestion_hypothesis_testing"
+                  ],
+                  "does_not_prove": [
+                    "congestion"
+                  ],
+                  "related_metrics": [
+                    "PRBs_UL_Current",
+                    "UL_NPRB",
+                    "UL_BLER",
+                    "UL_MCS",
+                    "TX_Bytes"
+                  ],
+                  "caution": "Verify scale before applying numeric congestion thresholds"
+                },
+                {
+                  "requested_concept": "UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)",
+                  "match_type": "token_overlap",
+                  "score": 131,
+                  "table": "telemetry_measurements",
+                  "metric": "Estimated_UL_Buffer",
+                  "concept": "uplink_buffer_estimate",
+                  "unit": "dataset_defined",
+                  "direction": "uplink",
+                  "aggregation": null,
+                  "meaning": "Estimated uplink buffer quantity",
+                  "supports": [
+                    "uplink_queue_or_buffer_pressure_assessment"
+                  ],
+                  "does_not_prove": [],
+                  "related_metrics": [],
+                  "caution": "Exact unit and generation semantics must be confirmed before defining thresholds"
+                },
+                {
+                  "requested_concept": "UL_BLER (uplink block error rate)",
+                  "match_type": "token_overlap",
+                  "score": 116,
+                  "table": "telemetry_measurements",
+                  "metric": "DL_BLER",
+                  "concept": "downlink_block_error_rate",
+                  "unit": "ratio",
+                  "direction": "downlink",
+                  "aggregation": null,
+                  "meaning": "Downlink block decoding error rate",
+                  "supports": [
+                    "downlink_reliability_impairment"
+                  ],
+                  "does_not_prove": [
+                    "packet_loss",
+                    "interference",
+                    "coverage_failure",
+                    "congestion",
+                    "physical_root_cause"
+                  ],
+                  "related_metrics": [
+                    "DL_MCS",
+                    "RSRP",
+                    "PRB_Utilization_DL"
+                  ],
+                  "caution": null
+                }
+              ],
+              "unresolved_concepts": [],
+              "cross_metric_guidance": []
+            }
+          }
+        }
+      },
+      "output": {
+        "can_answer": true,
+        "sql": "WITH base AS (\n  SELECT\n    sample_index,\n    event_timestamp,\n    UL_BLER,\n    UL_SNR,\n    UL_MCS,\n    PRB_Utilization_UL,\n    Estimated_UL_Buffer\n  FROM telemetry_measurements\n  WHERE window_id = 'WIN-000037'\n)\nSELECT\n  -- Correlation signatures (mechanism-consistent patterns)\n  corr(UL_BLER, UL_SNR) AS corr_ul_bler_ul_snr,\n  corr(UL_BLER, PRB_Utilization_UL) AS corr_ul_bler_ul_prb_util,\n  corr(UL_BLER, Estimated_UL_Buffer) AS corr_ul_bler_ul_buffer,\n  corr(UL_BLER, UL_MCS) AS corr_ul_bler_ul_mcs,\n\n  -- Burst-on/burst-off signature: look at top UL_BLER samples\n  100.0 * SUM(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN 1 ELSE 0 END) / COUNT(*)\n    AS pct_samples_ul_bler_at_or_above_p95,\n\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN UL_SNR ELSE NULL END) AS avg_ul_snr_in_ul_bler_p95_bursts,\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN PRB_Utilization_UL ELSE NULL END) AS avg_ul_prb_util_in_ul_bler_p95_bursts,\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN Estimated_UL_Buffer ELSE NULL END) AS avg_ul_buffer_in_ul_bler_p95_bursts,\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN UL_MCS ELSE NULL END) AS avg_ul_mcs_in_ul_bler_p95_bursts\nFROM base;"
+      },
+      "metadata": {
+        "estimated_input_tokens": 4306
+      }
+    },
+    {
+      "stage": "05_sql_execution",
+      "agent": "duckdb",
+      "timestamp": "2026-08-28T01:38:28.774088+05:30",
+      "input": {
+        "generated_sql": "WITH base AS (\n  SELECT\n    sample_index,\n    event_timestamp,\n    UL_BLER,\n    UL_SNR,\n    UL_MCS,\n    PRB_Utilization_UL,\n    Estimated_UL_Buffer\n  FROM telemetry_measurements\n  WHERE window_id = 'WIN-000037'\n)\nSELECT\n  -- Correlation signatures (mechanism-consistent patterns)\n  corr(UL_BLER, UL_SNR) AS corr_ul_bler_ul_snr,\n  corr(UL_BLER, PRB_Utilization_UL) AS corr_ul_bler_ul_prb_util,\n  corr(UL_BLER, Estimated_UL_Buffer) AS corr_ul_bler_ul_buffer,\n  corr(UL_BLER, UL_MCS) AS corr_ul_bler_ul_mcs,\n\n  -- Burst-on/burst-off signature: look at top UL_BLER samples\n  100.0 * SUM(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN 1 ELSE 0 END) / COUNT(*)\n    AS pct_samples_ul_bler_at_or_above_p95,\n\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN UL_SNR ELSE NULL END) AS avg_ul_snr_in_ul_bler_p95_bursts,\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN PRB_Utilization_UL ELSE NULL END) AS avg_ul_prb_util_in_ul_bler_p95_bursts,\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN Estimated_UL_Buffer ELSE NULL END) AS avg_ul_buffer_in_ul_bler_p95_bursts,\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN UL_MCS ELSE NULL END) AS avg_ul_mcs_in_ul_bler_p95_bursts\nFROM base;",
+        "window_ids": [
+          "WIN-000037"
+        ],
+        "execute_enabled": true
+      },
+      "output": {
+        "status": "failed",
+        "raw_sql": "WITH base AS (\n  SELECT\n    sample_index,\n    event_timestamp,\n    UL_BLER,\n    UL_SNR,\n    UL_MCS,\n    PRB_Utilization_UL,\n    Estimated_UL_Buffer\n  FROM telemetry_measurements\n  WHERE window_id = 'WIN-000037'\n)\nSELECT\n  -- Correlation signatures (mechanism-consistent patterns)\n  corr(UL_BLER, UL_SNR) AS corr_ul_bler_ul_snr,\n  corr(UL_BLER, PRB_Utilization_UL) AS corr_ul_bler_ul_prb_util,\n  corr(UL_BLER, Estimated_UL_Buffer) AS corr_ul_bler_ul_buffer,\n  corr(UL_BLER, UL_MCS) AS corr_ul_bler_ul_mcs,\n\n  -- Burst-on/burst-off signature: look at top UL_BLER samples\n  100.0 * SUM(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN 1 ELSE 0 END) / COUNT(*)\n    AS pct_samples_ul_bler_at_or_above_p95,\n\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN UL_SNR ELSE NULL END) AS avg_ul_snr_in_ul_bler_p95_bursts,\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN PRB_Utilization_UL ELSE NULL END) AS avg_ul_prb_util_in_ul_bler_p95_bursts,\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN Estimated_UL_Buffer ELSE NULL END) AS avg_ul_buffer_in_ul_bler_p95_bursts,\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN UL_MCS ELSE NULL END) AS avg_ul_mcs_in_ul_bler_p95_bursts\nFROM base;",
+        "sqlglot_validated_sql": "WITH base AS (\n  SELECT\n    sample_index,\n    event_timestamp,\n    UL_BLER,\n    UL_SNR,\n    UL_MCS,\n    PRB_Utilization_UL,\n    Estimated_UL_Buffer\n  FROM telemetry_measurements\n  WHERE\n    window_id = 'WIN-000037'\n)\nSELECT\n  CORR(UL_BLER, UL_SNR) AS corr_ul_bler_ul_snr, /* Correlation signatures (mechanism-consistent patterns) */\n  CORR(UL_BLER, PRB_Utilization_UL) AS corr_ul_bler_ul_prb_util,\n  CORR(UL_BLER, Estimated_UL_Buffer) AS corr_ul_bler_ul_buffer,\n  CORR(UL_BLER, UL_MCS) AS corr_ul_bler_ul_mcs,\n  100.0 /* Burst-on/burst-off signature: look at top UL_BLER samples */ * SUM(CASE WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95) THEN 1 ELSE 0 END) / COUNT(*) AS pct_samples_ul_bler_at_or_above_p95,\n  AVG(CASE WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95) THEN UL_SNR ELSE NULL END) AS avg_ul_snr_in_ul_bler_p95_bursts,\n  AVG(\n    CASE\n      WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95)\n      THEN PRB_Utilization_UL\n      ELSE NULL\n    END\n  ) AS avg_ul_prb_util_in_ul_bler_p95_bursts,\n  AVG(\n    CASE\n      WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95)\n      THEN Estimated_UL_Buffer\n      ELSE NULL\n    END\n  ) AS avg_ul_buffer_in_ul_bler_p95_bursts,\n  AVG(CASE WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95) THEN UL_MCS ELSE NULL END) AS avg_ul_mcs_in_ul_bler_p95_bursts\nFROM base",
+        "scope_validation": "passed",
+        "stage": "duckdb_explain",
+        "error_type": "BinderException",
+        "error": "Binder Error: aggregate function calls cannot be nested\n\nLINE 19: ...: look at top UL_BLER samples */ * SUM(CASE WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95) THEN 1 ELSE 0 END) / COUNT...\n                                                                        ^"
+      },
+      "metadata": {}
+    },
+    {
+      "stage": "06_telemetry_finalizer",
+      "agent": "telemetry",
+      "timestamp": "2026-08-28T01:38:36.828479+05:30",
+      "input": {
+        "model_profile": "telemetry",
+        "system_prompt": "\nYou are a senior Telemetry Domain Engineer reviewing one investigation\ntrace.\n\nDistinguish carefully between:\n\n1. incident statements;\n2. engineering/domain knowledge;\n3. operational observations;\n4. engineering inference.\n\nOnly executed operational evidence may be reported as a confirmed\nobservation.\n\nDiagnostic patterns, metric catalogs, runbooks and policies are\nknowledge. They are not incident proof.\n\nClassify each hypothesis as:\n\nSUPPORTED\nCONTRADICTED\nINCONCLUSIVE\nNOT_TESTABLE\n\nDo not claim physical root cause unless operational evidence\nestablishes it.\n\nAlso inspect the quality of the context supplied to you.\n\nIdentify if:\n\n- the investigation request was ambiguous;\n- required measurement context was missing;\n- temporal granularity was inappropriate;\n- schema information was missing;\n- tool requests were unnecessarily broad;\n- SQL requested evidence unavailable from the schema;\n- knowledge was mistaken for operational evidence;\n- important incident context was lost between stages.\n\nKeep the output concise.\n",
+        "user_prompt": "\nINCIDENT|\n\n{\"incident_id\":\"INC-COMPLEX-001\",\"problem_statement\":\"Users report intermittent uplink performance degradation during WIN-000037. Degradation is not continuous; upload performance drops sharply for short periods and then recovers.\",\"investigation_goal\":\"Determine which telemetry mechanism(s) are most consistent with the intermittent uplink performance degradation during WIN-000037 (e.g., poor signal quality, radio reliability degradation, resource congestion, buffering/traffic-pressure effects, or an interaction).\",\"symptoms\":[\"Users report intermittent uplink performance degradation during WIN-000037.\",\"Upload performance drops sharply for short periods and then recovers (degradation is not continuous).\",\"UL_BLER may increase during some degraded periods.\",\"UL_SNR may fluctuate, but it is unclear whether signal quality consistently explains the degradation.\",\"UL_MCS appears unstable.\",\"Uplink PRB utilization may increase during parts of the window.\",\"Buffer buildup may also be occurring.\"],\"window_ids\":[\"WIN-000037\"],\"explicit_hypotheses\":[\"poor uplink signal quality\",\"uplink radio reliability degradation\",\"uplink resource congestion\",\"buffering or traffic-pressure effects\",\"interaction between multiple mechanisms\",\"another telemetry mechanism\"],\"constraints\":[\"Do not assume that correlation between two metrics proves causation.\",\"Do not investigate beyond what is explicitly requested: identify evidence supporting/contradicting mechanisms and what telemetry should be examined.\",\"Do not force a conclusion if available telemetry cannot distinguish mechanisms; identify evidence gaps instead.\"],\"missing_context\":[\"Whether UL_SNR consistently explains degradation across all degraded periods.\",\"Whether UL_MCS instability correlates with BLER increases and/or resource/queue indicators in a way that distinguishes between signal-quality vs reliability vs congestion effects.\",\"Whether buffer buildup timing aligns with PRB utilization increases and/or the onset/recovery of performance drops.\",\"Specific telemetry values/thresholds for UL_BLER, UL_SNR, UL_MCS, UL PRB utilization, and buffering/queue metrics during degraded vs recovered periods.\",\"Whether any additional telemetry mechanisms are available (e.g., scheduling/queue delay indicators, retransmission counts) to distinguish radio reliability vs congestion/buffering effects.\"]}\n\nMANDATORY POLICY / EVIDENCE RULES|\n\n{\"policy\":{\"policy_id\":\"TELCO_AI_INVESTIGATION_POLICY\",\"version\":\"1.0\",\"domain\":\"telemetry\",\"mandatory_rules\":[\"global.evidence.never_invent_missing_evidence\",\"global.evidence.distinguish_observed_from_inferred\",\"global.evidence.distinguish_knowledge_from_incident_evidence\",\"global.evidence.knowledge_is_not_incident_proof\",\"global.evidence.historical_similarity_is_not_incident_proof\",\"global.evidence.correlation_does_not_establish_causation\",\"global.evidence.absence_of_evidence_does_not_prove_absence\",\"global.reasoning.prefer_existing_evidence_before_new_tool_calls\",\"global.reasoning.use_minimum_evidence_needed\",\"global.reasoning.investigate_material_uncertainty_only\",\"global.reasoning.allow_multiple_competing_hypotheses\",\"global.reasoning.actively_seek_contradicting_evidence\",\"global.reasoning.do_not_force_root_cause\",\"global.reasoning.allow_root_cause_undetermined\",\"global.reasoning.separate_symptom_impairment_driver_and_root_cause\",\"global.claims.temporal_change_requires_temporal_comparison\",\"global.claims.baseline_claim_requires_valid_baseline\",\"global.claims.causal_claim_requires_supporting_evidence\",\"global.claims.cross_domain_claim_requires_cross_domain_evidence\",\"global.claims.do_not_relabel_metrics\",\"global.tool_usage.tool_call_requires_specific_evidence_goal\",\"global.tool_usage.avoid_duplicate_queries\",\"global.tool_usage.avoid_querying_unavailable_evidence_repeatedly\",\"global.tool_usage.prefer_small_focused_queries\",\"global.tool_usage.do_not_use_tool_only_because_available\",\"global.context_management.send_compact_findings_to_rca\",\"global.context_management.do_not_send_raw_tool_output_to_rca\",\"global.context_management.retain_confirmed_findings\",\"global.context_management.retain_material_ruled_out_hypotheses\",\"global.context_management.retain_material_open_questions\",\"global.context_management.remove_resolved_open_questions\",\"telemetry.scope.responsible_for_measured_network_behavior\",\"telemetry.scope.may_identify_telemetry_level_impairment\",\"telemetry.scope.may_rank_telemetry_supported_hypotheses\",\"telemetry.scope.must_not_claim_physical_failure_without_support\",\"telemetry.metric_semantics.bler_is_not_packet_loss\",\"telemetry.metric_semantics.bler_alone_is_not_root_cause\",\"telemetry.metric_semantics.bytes_are_not_throughput_without_time_basis\",\"telemetry.metric_semantics.prb_utilization_alone_does_not_prove_congestion\",\"telemetry.metric_semantics.rsrp_alone_does_not_establish_radio_quality\",\"telemetry.metric_semantics.mcs_alone_does_not_establish_root_cause\",\"telemetry.congestion.require_absolute_resource_utilization_evidence\",\"telemetry.congestion.relative_difference_alone_is_insufficient\",\"telemetry.congestion.require_alignment_with_reported_service_degradation\",\"telemetry.congestion.prefer_supporting_load_or_scheduler_evidence_when_available\",\"telemetry.radio_reliability.elevated_bler_supports_reliability_impairment\",\"telemetry.radio_reliability.bler_does_not_identify_physical_mechanism\",\"telemetry.radio_reliability.evaluate_ul_and_dl_independently\",\"telemetry.radio_reliability.consider_signal_resource_and_link_adaptation_evidence\",\"telemetry.signal_quality.do_not_equate_signal_strength_with_signal_quality\",\"telemetry.signal_quality.healthy_rsrp_does_not_rule_out_interference\",\"telemetry.signal_quality.poor_rsrp_may_support_coverage_hypothesis_but_does_not_prove_it\",\"telemetry.temporal_analysis.average_min_max_do_not_prove_burstiness\",\"telemetry.temporal_analysis.intermittency_requires_time_resolved_evidence\",\"telemetry.temporal_analysis.degradation_requires_comparison_across_time_or_baseline\",\"telemetry.sql.preserve_incident_scope\",\"telemetry.sql.preserve_window_scope\",\"telemetry.sql.never_expand_scope_without_explicit_reason\",\"telemetry.sql.prefer_simple_duckdb_queries\",\"telemetry.sql.split_complex_analysis_into_sequential_queries\",\"telemetry.sql.use_only_available_schema\",\"telemetry.sql.do_not_manufacture_missing_kpis\",\"telemetry.escalation.hardware_hypothesis_should_request_alarm_or_log_evidence\",\"telemetry.escalation.shared_dependency_hypothesis_should_request_topology_evidence\",\"telemetry.escalation.unresolved_cross_domain_question_should_be_returned_to_rca\",\"knowledge_usage.rag.use_when_domain_reference_knowledge_is_needed\",\"knowledge_usage.rag.do_not_retrieve_when_current_context_is_sufficient\",\"knowledge_usage.rag.prefer_domain_and_context_filtered_retrieval\",\"knowledge_usage.rag.retrieved_documentation_is_knowledge_not_observed_evidence\",\"knowledge_usage.rag.prefer_current_applicable_document_version\",\"knowledge_usage.policy_precedence.organization_policy_overrides_general_model_knowledge\",\"knowledge_usage.policy_precedence.applicable_specific_policy_overrides_general_policy\",\"knowledge_usage.policy_precedence.incident_evidence_does_not_override_policy_constraints\"]},\"evidence_rules\":{\"version\":\"1.0\",\"evidence_levels\":{\"confirmed\":{\"description\":\"Directly demonstrated by available evidence.\",\"allowed_language\":[\"confirmed\",\"demonstrates\",\"establishes\"]},\"supported\":{\"description\":\"Multiple observations are consistent with the hypothesis but do not prove it.\",\"allowed_language\":[\"supported\",\"consistent with\",\"evidence suggests\"]},\"possible\":{\"description\":\"Plausible but insufficiently evidenced.\",\"allowed_language\":[\"possible\",\"remains plausible\",\"cannot be ruled out\"]},\"contradicted\":{\"description\":\"Available evidence materially conflicts with the hypothesis.\",\"allowed_language\":[\"contradicted\",\"not supported by available evidence\",\"unlikely based on available evidence\"]},\"unassessable\":{\"description\":\"Required evidence is unavailable.\",\"allowed_language\":[\"cannot be determined\",\"insufficient evidence\",\"not observable from available data\"]}},\"reasoning_rules\":[{\"rule_id\":\"NO_CAUSE_FROM_CORRELATION\",\"rule\":\"Correlation or temporal alignment alone must not be described as proof of causation.\"},{\"rule_id\":\"NO_PROXY_AS_DIRECT_EVIDENCE\",\"rule\":\"A proxy metric must not be presented as direct measurement unless the metric catalog explicitly defines that relationship.\"},{\"rule_id\":\"NO_MISSING_DATA_INFERENCE\",\"rule\":\"Absence of a required metric must result in an evidence gap, not an inferred value.\"},{\"rule_id\":\"NO_ROOT_CAUSE_FROM_IMPAIRMENT\",\"rule\":\"A confirmed impairment must not automatically be promoted to a physical root cause.\"},{\"rule_id\":\"CONTRADICTION_IS_EVIDENCE\",\"rule\":\"Evidence that materially contradicts a hypothesis should be reported, not omitted.\"},{\"rule_id\":\"PREFER_DISCRIMINATING_EVIDENCE\",\"rule\":\"Prefer evidence that distinguishes competing hypotheses over collecting additional unrelated metrics.\"},{\"rule_id\":\"STOP_WHEN_DOMAIN_EXHAUSTED\",\"rule\":\"When remaining hypotheses require evidence outside the current domain, return the evidence gap and recommend the appropriate domain rather than continuing redundant investigation.\"}]}}\n\nTELEMETRY PLAN|\n\n{\"incident_intent\":\"Use time-resolved uplink telemetry from WIN-000037 to determine which impairment mechanism(s) best match intermittent upload performance drops: signal-quality, radio reliability, resource congestion, buffering/traffic pressure, or an interaction—without assuming causation.\",\"intent_clarity\":\"clear\",\"hypotheses\":[{\"hypothesis\":\"Poor uplink signal quality (coverage/interference) drives intermittent BLER increases and link adaptation instability.\",\"evidence_needed\":[\"During degraded bursts, UL_SNR shows clear short-time dips (not just average degradation).\",\"UL_MCS changes/instability during bursts are consistent with adaptation to worse link conditions (e.g., lower/lurching MCS around SNR dips).\",\"UL_BLER elevates during the same burst windows as UL_SNR dips (temporal alignment).\",\"UL_PRB_utilization and the buffer/queue metric do not show a primary spike/step-change at the same times (or are near baseline compared to BLER/SNR behavior).\"]},{\"hypothesis\":\"Uplink radio reliability degradation (errors increase) occurs without strong signal-quality deterioration (e.g., reliability faults rather than pure SNR/coverage).\",\"evidence_needed\":[\"UL_BLER spikes during degraded bursts while UL_SNR remains comparatively stable (no matching SNR dip magnitude/pattern).\",\"UL_MCS does not show the degree of adaptation shift expected from sustained SNR degradation (stability relative to BLER spikes).\",\"UL_PRB_utilization and buffer/queue do not rise in a way that tracks the BLER spikes (reducing the likelihood of congestion/buffering as primary driver).\",\"Recovery in observed upload performance coincides with BLER returning to normal even if UL_SNR does not exhibit the same burst-like pattern.\"]},{\"hypothesis\":\"Uplink resource congestion/scheduling pressure causes intermittent service degradation (PRB availability pressure, not primarily link quality).\",\"evidence_needed\":[\"UL_PRB_utilization shows sharp burst-like increases that align with upload performance drops.\",\"UL_SNR does not consistently deteriorate during the most severe performance drops (lack of sustained SNR dip alignment).\",\"UL_MCS behavior does not fully explain the drop (i.e., changes in MCS are not the sole driver of throughput impairment compared to PRB pressure).\",\"If available, the buffer/queue metric increases or queueing increases during the same congested bursts (alignment with service-delay symptoms).\"]},{\"hypothesis\":\"Buffering/traffic-pressure (queue buildup) causes intermittent upload slowdowns; radio conditions may be secondary.\",\"evidence_needed\":[\"Buffer/queue indicator shows burst-like growth starting near the onset of upload degradation windows.\",\"During degradation, UL_SNR remains relatively stable compared to the sharpness of the queue increase (signal quality not the primary pattern).\",\"UL_PRB_utilization is not required to spike as strongly as the buffer/queue metric (queueing can rise even with moderate PRB utilization if service rate lags demand).\",\"During recovery, the buffer/queue metric drains and performance improves without requiring a corresponding BLER/SNR pattern to fully explain recovery.\"]},{\"hypothesis\":\"Interaction between mechanisms (e.g., intermittent worse signal quality plus elevated resource/queue pressure) amplifies BLER/MCS instability and throughput drops.\",\"evidence_needed\":[\"The worst bursts show simultaneous impairing conditions (e.g., UL_SNR deterioration and elevated UL_PRB_utilization or queue growth) more than during milder degraded periods.\",\"Some degraded bursts are explainable by one mechanism alone (e.g., BLER up with modest PRB change), while others require the combined pattern—indicating intermittency from interactions.\",\"BLER peaks (and/or most severe MCS instability) are strongest when both (signal-quality pressure AND resource/queue pressure) are present together (temporal comparison across bursts).\",\"Recovery requires improvement in both contributing conditions (e.g., SNR rebounds and queue drains), rather than only one changing.\"]}],\"recommended_sequence\":[\"telemetry_patterns\",\"telemetry_schema\",\"telemetry_metrics\",\"telemetry_sql\"],\"metric_concepts\":[\"UL_BLER (uplink block error rate)\",\"UL_SNR (uplink signal-to-noise ratio)\",\"UL_MCS (uplink modulation/coding indicator, time-resolved)\",\"UL_PRB_utilization (uplink resource block utilization, time-resolved)\",\"UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)\"],\"analysis_granularity\":\"native\",\"evidence_goal\":\"Identify which mechanism signatures (SNR-driven, BLER-with-stable-SNR, PRB-congestion, buffer/queue buildup, or combined interaction) best match the burst-on/burst-off behavior of upload degradation within WIN-000037 using time-aligned telemetry.\"}\n\nDOMAIN KNOWLEDGE RETRIEVED|\n\n{\"telemetry_metrics\":{\"status\":\"completed\",\"retrieval_type\":\"deterministic\",\"catalog_version\":\"1.0\",\"requested_concepts\":[\"UL_BLER (uplink block error rate)\",\"UL_SNR (uplink signal-to-noise ratio)\",\"UL_MCS (uplink modulation/coding indicator, time-resolved)\",\"UL_PRB_utilization (uplink resource block utilization, time-resolved)\",\"UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)\"],\"resolved_metrics\":[{\"requested_concept\":\"UL_SNR (uplink signal-to-noise ratio)\",\"match_type\":\"token_overlap\",\"score\":217,\"table\":\"telemetry_measurements\",\"metric\":\"UL_SNR\",\"concept\":\"uplink_signal_to_noise_ratio\",\"unit\":\"dB\",\"direction\":\"uplink\",\"aggregation\":null,\"meaning\":\"Uplink signal-to-noise ratio\",\"supports\":[\"uplink_signal_quality_assessment\"],\"does_not_prove\":[\"interference_source\",\"physical_root_cause\"],\"related_metrics\":[\"UL_BLER\",\"UL_MCS\",\"RSRP\"],\"caution\":null},{\"requested_concept\":\"UL_SNR (uplink signal-to-noise ratio)\",\"match_type\":\"token_overlap\",\"score\":210,\"table\":\"telemetry_summary\",\"metric\":\"min_ul_snr\",\"concept\":\"uplink_signal_to_noise_ratio\",\"unit\":\"dB\",\"direction\":null,\"aggregation\":\"minimum\",\"meaning\":\"Minimum uplink SNR observed\",\"supports\":[],\"does_not_prove\":[],\"related_metrics\":[],\"caution\":\"Minimum alone does not establish persistent poor signal quality\"},{\"requested_concept\":\"UL_SNR (uplink signal-to-noise ratio)\",\"match_type\":\"token_overlap\",\"score\":203,\"table\":\"telemetry_summary\",\"metric\":\"avg_ul_snr\",\"concept\":\"uplink_signal_to_noise_ratio\",\"unit\":\"dB\",\"direction\":null,\"aggregation\":\"average\",\"meaning\":\"Average uplink signal-to-noise ratio\",\"supports\":[\"uplink_signal_quality_assessment\"],\"does_not_prove\":[\"interference_source\",\"physical_root_cause\"],\"related_metrics\":[],\"caution\":null},{\"requested_concept\":\"UL_BLER (uplink block error rate)\",\"match_type\":\"token_overlap\",\"score\":186,\"table\":\"telemetry_measurements\",\"metric\":\"UL_BLER\",\"concept\":\"uplink_block_error_rate\",\"unit\":\"ratio\",\"direction\":\"uplink\",\"aggregation\":null,\"meaning\":\"Uplink block decoding error rate\",\"supports\":[\"uplink_reliability_impairment\"],\"does_not_prove\":[\"packet_loss\",\"interference\",\"coverage_failure\",\"congestion\",\"physical_root_cause\"],\"related_metrics\":[\"UL_MCS\",\"UL_SNR\",\"RSRP\",\"PRB_Utilization_UL\"],\"caution\":null},{\"requested_concept\":\"UL_BLER (uplink block error rate)\",\"match_type\":\"token_overlap\",\"score\":180,\"table\":\"telemetry_summary\",\"metric\":\"avg_ul_bler\",\"concept\":\"uplink_block_error_rate\",\"unit\":\"ratio\",\"direction\":null,\"aggregation\":\"average\",\"meaning\":\"Average uplink block error rate\",\"supports\":[\"uplink_reliability_impairment\"],\"does_not_prove\":[\"packet_loss\",\"interference\",\"coverage_failure\",\"physical_root_cause\"],\"related_metrics\":[],\"caution\":null},{\"requested_concept\":\"UL_BLER (uplink block error rate)\",\"match_type\":\"token_overlap\",\"score\":170,\"table\":\"telemetry_summary\",\"metric\":\"max_ul_bler\",\"concept\":\"uplink_block_error_rate\",\"unit\":\"ratio\",\"direction\":null,\"aggregation\":\"maximum\",\"meaning\":\"Maximum uplink BLER observed in the window\",\"supports\":[],\"does_not_prove\":[],\"related_metrics\":[],\"caution\":\"Maximum alone does not establish persistence or intermittency\"},{\"requested_concept\":\"UL_PRB_utilization (uplink resource block utilization, time-resolved)\",\"match_type\":\"token_overlap\",\"score\":141,\"table\":\"telemetry_summary\",\"metric\":\"avg_prb_utilization_ul\",\"concept\":\"uplink_resource_utilization\",\"unit\":\"dataset_defined\",\"direction\":null,\"aggregation\":\"average\",\"meaning\":\"Average uplink PRB utilization\",\"supports\":[\"uplink_resource_load_assessment\"],\"does_not_prove\":[\"congestion\"],\"related_metrics\":[],\"caution\":\"Unit/scale should be verified before applying numeric thresholds\"},{\"requested_concept\":\"UL_MCS (uplink modulation/coding indicator, time-resolved)\",\"match_type\":\"token_overlap\",\"score\":135,\"table\":\"telemetry_summary\",\"metric\":\"avg_ul_mcs\",\"concept\":\"uplink_modulation_coding_scheme\",\"unit\":\"index\",\"direction\":null,\"aggregation\":\"average\",\"meaning\":\"Average uplink MCS\",\"supports\":[\"link_adaptation_behavior\"],\"does_not_prove\":[\"root_cause\",\"interference\"],\"related_metrics\":[],\"caution\":null},{\"requested_concept\":\"UL_MCS (uplink modulation/coding indicator, time-resolved)\",\"match_type\":\"token_overlap\",\"score\":135,\"table\":\"telemetry_measurements\",\"metric\":\"UL_MCS\",\"concept\":\"uplink_modulation_coding_scheme\",\"unit\":\"index\",\"direction\":\"uplink\",\"aggregation\":null,\"meaning\":\"Uplink modulation and coding selection\",\"supports\":[\"uplink_link_adaptation_assessment\"],\"does_not_prove\":[\"physical_root_cause\"],\"related_metrics\":[\"UL_BLER\",\"UL_SNR\",\"RSRP\"],\"caution\":null},{\"requested_concept\":\"UL_PRB_utilization (uplink resource block utilization, time-resolved)\",\"match_type\":\"token_overlap\",\"score\":135,\"table\":\"telemetry_measurements\",\"metric\":\"PRB_Utilization_UL\",\"concept\":\"uplink_resource_utilization\",\"unit\":\"dataset_defined\",\"direction\":\"uplink\",\"aggregation\":null,\"meaning\":\"Uplink PRB utilization measurement\",\"supports\":[\"uplink_resource_load_assessment\",\"congestion_hypothesis_testing\"],\"does_not_prove\":[\"congestion\"],\"related_metrics\":[\"PRBs_UL_Current\",\"UL_NPRB\",\"UL_BLER\",\"UL_MCS\",\"TX_Bytes\"],\"caution\":\"Verify scale before applying numeric congestion thresholds\"},{\"requested_concept\":\"UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)\",\"match_type\":\"token_overlap\",\"score\":131,\"table\":\"telemetry_measurements\",\"metric\":\"Estimated_UL_Buffer\",\"concept\":\"uplink_buffer_estimate\",\"unit\":\"dataset_defined\",\"direction\":\"uplink\",\"aggregation\":null,\"meaning\":\"Estimated uplink buffer quantity\",\"supports\":[\"uplink_queue_or_buffer_pressure_assessment\"],\"does_not_prove\":[],\"related_metrics\":[],\"caution\":\"Exact unit and generation semantics must be confirmed before defining thresholds\"},{\"requested_concept\":\"UL_BLER (uplink block error rate)\",\"match_type\":\"token_overlap\",\"score\":116,\"table\":\"telemetry_measurements\",\"metric\":\"DL_BLER\",\"concept\":\"downlink_block_error_rate\",\"unit\":\"ratio\",\"direction\":\"downlink\",\"aggregation\":null,\"meaning\":\"Downlink block decoding error rate\",\"supports\":[\"downlink_reliability_impairment\"],\"does_not_prove\":[\"packet_loss\",\"interference\",\"coverage_failure\",\"congestion\",\"physical_root_cause\"],\"related_metrics\":[\"DL_MCS\",\"RSRP\",\"PRB_Utilization_DL\"],\"caution\":null}],\"unresolved_concepts\":[],\"cross_metric_guidance\":[]}}\n\nSQL PLANNER OUTPUT|\n\n{\"can_answer\":true,\"sql\":\"WITH base AS (\\n  SELECT\\n    sample_index,\\n    event_timestamp,\\n    UL_BLER,\\n    UL_SNR,\\n    UL_MCS,\\n    PRB_Utilization_UL,\\n    Estimated_UL_Buffer\\n  FROM telemetry_measurements\\n  WHERE window_id = 'WIN-000037'\\n)\\nSELECT\\n  -- Correlation signatures (mechanism-consistent patterns)\\n  corr(UL_BLER, UL_SNR) AS corr_ul_bler_ul_snr,\\n  corr(UL_BLER, PRB_Utilization_UL) AS corr_ul_bler_ul_prb_util,\\n  corr(UL_BLER, Estimated_UL_Buffer) AS corr_ul_bler_ul_buffer,\\n  corr(UL_BLER, UL_MCS) AS corr_ul_bler_ul_mcs,\\n\\n  -- Burst-on/burst-off signature: look at top UL_BLER samples\\n  100.0 * SUM(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN 1 ELSE 0 END) / COUNT(*)\\n    AS pct_samples_ul_bler_at_or_above_p95,\\n\\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN UL_SNR ELSE NULL END) AS avg_ul_snr_in_ul_bler_p95_bursts,\\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN PRB_Utilization_UL ELSE NULL END) AS avg_ul_prb_util_in_ul_bler_p95_bursts,\\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN Estimated_UL_Buffer ELSE NULL END) AS avg_ul_buffer_in_ul_bler_p95_bursts,\\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN UL_MCS ELSE NULL END) AS avg_ul_mcs_in_ul_bler_p95_bursts\\nFROM base;\"}\n\nOPERATIONAL SQL EXECUTION RESULT|\n\n{\"status\":\"failed\",\"raw_sql\":\"WITH base AS (\\n  SELECT\\n    sample_index,\\n    event_timestamp,\\n    UL_BLER,\\n    UL_SNR,\\n    UL_MCS,\\n    PRB_Utilization_UL,\\n    Estimated_UL_Buffer\\n  FROM telemetry_measurements\\n  WHERE window_id = 'WIN-000037'\\n)\\nSELECT\\n  -- Correlation signatures (mechanism-consistent patterns)\\n  corr(UL_BLER, UL_SNR) AS corr_ul_bler_ul_snr,\\n  corr(UL_BLER, PRB_Utilization_UL) AS corr_ul_bler_ul_prb_util,\\n  corr(UL_BLER, Estimated_UL_Buffer) AS corr_ul_bler_ul_buffer,\\n  corr(UL_BLER, UL_MCS) AS corr_ul_bler_ul_mcs,\\n\\n  -- Burst-on/burst-off signature: look at top UL_BLER samples\\n  100.0 * SUM(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN 1 ELSE 0 END) / COUNT(*)\\n    AS pct_samples_ul_bler_at_or_above_p95,\\n\\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN UL_SNR ELSE NULL END) AS avg_ul_snr_in_ul_bler_p95_bursts,\\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN PRB_Utilization_UL ELSE NULL END) AS avg_ul_prb_util_in_ul_bler_p95_bursts,\\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN Estimated_UL_Buffer ELSE NULL END) AS avg_ul_buffer_in_ul_bler_p95_bursts,\\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN UL_MCS ELSE NULL END) AS avg_ul_mcs_in_ul_bler_p95_bursts\\nFROM base;\",\"sqlglot_validated_sql\":\"WITH base AS (\\n  SELECT\\n    sample_index,\\n    event_timestamp,\\n    UL_BLER,\\n    UL_SNR,\\n    UL_MCS,\\n    PRB_Utilization_UL,\\n    Estimated_UL_Buffer\\n  FROM telemetry_measurements\\n  WHERE\\n    window_id = 'WIN-000037'\\n)\\nSELECT\\n  CORR(UL_BLER, UL_SNR) AS corr_ul_bler_ul_snr, /* Correlation signatures (mechanism-consistent patterns) */\\n  CORR(UL_BLER, PRB_Utilization_UL) AS corr_ul_bler_ul_prb_util,\\n  CORR(UL_BLER, Estimated_UL_Buffer) AS corr_ul_bler_ul_buffer,\\n  CORR(UL_BLER, UL_MCS) AS corr_ul_bler_ul_mcs,\\n  100.0 /* Burst-on/burst-off signature: look at top UL_BLER samples */ * SUM(CASE WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95) THEN 1 ELSE 0 END) / COUNT(*) AS pct_samples_ul_bler_at_or_above_p95,\\n  AVG(CASE WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95) THEN UL_SNR ELSE NULL END) AS avg_ul_snr_in_ul_bler_p95_bursts,\\n  AVG(\\n    CASE\\n      WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95)\\n      THEN PRB_Utilization_UL\\n      ELSE NULL\\n    END\\n  ) AS avg_ul_prb_util_in_ul_bler_p95_bursts,\\n  AVG(\\n    CASE\\n      WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95)\\n      THEN Estimated_UL_Buffer\\n      ELSE NULL\\n    END\\n  ) AS avg_ul_buffer_in_ul_bler_p95_bursts,\\n  AVG(CASE WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95) THEN UL_MCS ELSE NULL END) AS avg_ul_mcs_in_ul_bler_p95_bursts\\nFROM base\",\"scope_validation\":\"passed\",\"stage\":\"duckdb_explain\",\"error_type\":\"BinderException\",\"error\":\"Binder Error: aggregate function calls cannot be nested\\n\\nLINE 19: ...: look at top UL_BLER samples */ * SUM(CASE WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95) THEN 1 ELSE 0 END) / COUNT...\\n                                                                        ^\"}\n\nGenerate the telemetry assessment.\n\nDo not add facts absent from the operational evidence.\n",
+        "parsed_incident": {
+          "incident_id": "INC-COMPLEX-001",
+          "problem_statement": "Users report intermittent uplink performance degradation during WIN-000037. Degradation is not continuous; upload performance drops sharply for short periods and then recovers.",
+          "investigation_goal": "Determine which telemetry mechanism(s) are most consistent with the intermittent uplink performance degradation during WIN-000037 (e.g., poor signal quality, radio reliability degradation, resource congestion, buffering/traffic-pressure effects, or an interaction).",
+          "symptoms": [
+            "Users report intermittent uplink performance degradation during WIN-000037.",
+            "Upload performance drops sharply for short periods and then recovers (degradation is not continuous).",
+            "UL_BLER may increase during some degraded periods.",
+            "UL_SNR may fluctuate, but it is unclear whether signal quality consistently explains the degradation.",
+            "UL_MCS appears unstable.",
+            "Uplink PRB utilization may increase during parts of the window.",
+            "Buffer buildup may also be occurring."
+          ],
+          "window_ids": [
+            "WIN-000037"
+          ],
+          "explicit_hypotheses": [
+            "poor uplink signal quality",
+            "uplink radio reliability degradation",
+            "uplink resource congestion",
+            "buffering or traffic-pressure effects",
+            "interaction between multiple mechanisms",
+            "another telemetry mechanism"
+          ],
+          "constraints": [
+            "Do not assume that correlation between two metrics proves causation.",
+            "Do not investigate beyond what is explicitly requested: identify evidence supporting/contradicting mechanisms and what telemetry should be examined.",
+            "Do not force a conclusion if available telemetry cannot distinguish mechanisms; identify evidence gaps instead."
+          ],
+          "missing_context": [
+            "Whether UL_SNR consistently explains degradation across all degraded periods.",
+            "Whether UL_MCS instability correlates with BLER increases and/or resource/queue indicators in a way that distinguishes between signal-quality vs reliability vs congestion effects.",
+            "Whether buffer buildup timing aligns with PRB utilization increases and/or the onset/recovery of performance drops.",
+            "Specific telemetry values/thresholds for UL_BLER, UL_SNR, UL_MCS, UL PRB utilization, and buffering/queue metrics during degraded vs recovered periods.",
+            "Whether any additional telemetry mechanisms are available (e.g., scheduling/queue delay indicators, retransmission counts) to distinguish radio reliability vs congestion/buffering effects."
+          ]
+        },
+        "telemetry_plan": {
+          "incident_intent": "Use time-resolved uplink telemetry from WIN-000037 to determine which impairment mechanism(s) best match intermittent upload performance drops: signal-quality, radio reliability, resource congestion, buffering/traffic pressure, or an interaction—without assuming causation.",
+          "intent_clarity": "clear",
+          "hypotheses": [
+            {
+              "hypothesis": "Poor uplink signal quality (coverage/interference) drives intermittent BLER increases and link adaptation instability.",
+              "evidence_needed": [
+                "During degraded bursts, UL_SNR shows clear short-time dips (not just average degradation).",
+                "UL_MCS changes/instability during bursts are consistent with adaptation to worse link conditions (e.g., lower/lurching MCS around SNR dips).",
+                "UL_BLER elevates during the same burst windows as UL_SNR dips (temporal alignment).",
+                "UL_PRB_utilization and the buffer/queue metric do not show a primary spike/step-change at the same times (or are near baseline compared to BLER/SNR behavior)."
+              ]
+            },
+            {
+              "hypothesis": "Uplink radio reliability degradation (errors increase) occurs without strong signal-quality deterioration (e.g., reliability faults rather than pure SNR/coverage).",
+              "evidence_needed": [
+                "UL_BLER spikes during degraded bursts while UL_SNR remains comparatively stable (no matching SNR dip magnitude/pattern).",
+                "UL_MCS does not show the degree of adaptation shift expected from sustained SNR degradation (stability relative to BLER spikes).",
+                "UL_PRB_utilization and buffer/queue do not rise in a way that tracks the BLER spikes (reducing the likelihood of congestion/buffering as primary driver).",
+                "Recovery in observed upload performance coincides with BLER returning to normal even if UL_SNR does not exhibit the same burst-like pattern."
+              ]
+            },
+            {
+              "hypothesis": "Uplink resource congestion/scheduling pressure causes intermittent service degradation (PRB availability pressure, not primarily link quality).",
+              "evidence_needed": [
+                "UL_PRB_utilization shows sharp burst-like increases that align with upload performance drops.",
+                "UL_SNR does not consistently deteriorate during the most severe performance drops (lack of sustained SNR dip alignment).",
+                "UL_MCS behavior does not fully explain the drop (i.e., changes in MCS are not the sole driver of throughput impairment compared to PRB pressure).",
+                "If available, the buffer/queue metric increases or queueing increases during the same congested bursts (alignment with service-delay symptoms)."
+              ]
+            },
+            {
+              "hypothesis": "Buffering/traffic-pressure (queue buildup) causes intermittent upload slowdowns; radio conditions may be secondary.",
+              "evidence_needed": [
+                "Buffer/queue indicator shows burst-like growth starting near the onset of upload degradation windows.",
+                "During degradation, UL_SNR remains relatively stable compared to the sharpness of the queue increase (signal quality not the primary pattern).",
+                "UL_PRB_utilization is not required to spike as strongly as the buffer/queue metric (queueing can rise even with moderate PRB utilization if service rate lags demand).",
+                "During recovery, the buffer/queue metric drains and performance improves without requiring a corresponding BLER/SNR pattern to fully explain recovery."
+              ]
+            },
+            {
+              "hypothesis": "Interaction between mechanisms (e.g., intermittent worse signal quality plus elevated resource/queue pressure) amplifies BLER/MCS instability and throughput drops.",
+              "evidence_needed": [
+                "The worst bursts show simultaneous impairing conditions (e.g., UL_SNR deterioration and elevated UL_PRB_utilization or queue growth) more than during milder degraded periods.",
+                "Some degraded bursts are explainable by one mechanism alone (e.g., BLER up with modest PRB change), while others require the combined pattern—indicating intermittency from interactions.",
+                "BLER peaks (and/or most severe MCS instability) are strongest when both (signal-quality pressure AND resource/queue pressure) are present together (temporal comparison across bursts).",
+                "Recovery requires improvement in both contributing conditions (e.g., SNR rebounds and queue drains), rather than only one changing."
+              ]
+            }
+          ],
+          "recommended_sequence": [
+            "telemetry_patterns",
+            "telemetry_schema",
+            "telemetry_metrics",
+            "telemetry_sql"
+          ],
+          "metric_concepts": [
+            "UL_BLER (uplink block error rate)",
+            "UL_SNR (uplink signal-to-noise ratio)",
+            "UL_MCS (uplink modulation/coding indicator, time-resolved)",
+            "UL_PRB_utilization (uplink resource block utilization, time-resolved)",
+            "UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)"
+          ],
+          "analysis_granularity": "native",
+          "evidence_goal": "Identify which mechanism signatures (SNR-driven, BLER-with-stable-SNR, PRB-congestion, buffer/queue buildup, or combined interaction) best match the burst-on/burst-off behavior of upload degradation within WIN-000037 using time-aligned telemetry."
+        },
+        "mandatory_context": {
+          "policy": {
+            "policy_id": "TELCO_AI_INVESTIGATION_POLICY",
+            "version": "1.0",
+            "domain": "telemetry",
+            "mandatory_rules": [
+              "global.evidence.never_invent_missing_evidence",
+              "global.evidence.distinguish_observed_from_inferred",
+              "global.evidence.distinguish_knowledge_from_incident_evidence",
+              "global.evidence.knowledge_is_not_incident_proof",
+              "global.evidence.historical_similarity_is_not_incident_proof",
+              "global.evidence.correlation_does_not_establish_causation",
+              "global.evidence.absence_of_evidence_does_not_prove_absence",
+              "global.reasoning.prefer_existing_evidence_before_new_tool_calls",
+              "global.reasoning.use_minimum_evidence_needed",
+              "global.reasoning.investigate_material_uncertainty_only",
+              "global.reasoning.allow_multiple_competing_hypotheses",
+              "global.reasoning.actively_seek_contradicting_evidence",
+              "global.reasoning.do_not_force_root_cause",
+              "global.reasoning.allow_root_cause_undetermined",
+              "global.reasoning.separate_symptom_impairment_driver_and_root_cause",
+              "global.claims.temporal_change_requires_temporal_comparison",
+              "global.claims.baseline_claim_requires_valid_baseline",
+              "global.claims.causal_claim_requires_supporting_evidence",
+              "global.claims.cross_domain_claim_requires_cross_domain_evidence",
+              "global.claims.do_not_relabel_metrics",
+              "global.tool_usage.tool_call_requires_specific_evidence_goal",
+              "global.tool_usage.avoid_duplicate_queries",
+              "global.tool_usage.avoid_querying_unavailable_evidence_repeatedly",
+              "global.tool_usage.prefer_small_focused_queries",
+              "global.tool_usage.do_not_use_tool_only_because_available",
+              "global.context_management.send_compact_findings_to_rca",
+              "global.context_management.do_not_send_raw_tool_output_to_rca",
+              "global.context_management.retain_confirmed_findings",
+              "global.context_management.retain_material_ruled_out_hypotheses",
+              "global.context_management.retain_material_open_questions",
+              "global.context_management.remove_resolved_open_questions",
+              "telemetry.scope.responsible_for_measured_network_behavior",
+              "telemetry.scope.may_identify_telemetry_level_impairment",
+              "telemetry.scope.may_rank_telemetry_supported_hypotheses",
+              "telemetry.scope.must_not_claim_physical_failure_without_support",
+              "telemetry.metric_semantics.bler_is_not_packet_loss",
+              "telemetry.metric_semantics.bler_alone_is_not_root_cause",
+              "telemetry.metric_semantics.bytes_are_not_throughput_without_time_basis",
+              "telemetry.metric_semantics.prb_utilization_alone_does_not_prove_congestion",
+              "telemetry.metric_semantics.rsrp_alone_does_not_establish_radio_quality",
+              "telemetry.metric_semantics.mcs_alone_does_not_establish_root_cause",
+              "telemetry.congestion.require_absolute_resource_utilization_evidence",
+              "telemetry.congestion.relative_difference_alone_is_insufficient",
+              "telemetry.congestion.require_alignment_with_reported_service_degradation",
+              "telemetry.congestion.prefer_supporting_load_or_scheduler_evidence_when_available",
+              "telemetry.radio_reliability.elevated_bler_supports_reliability_impairment",
+              "telemetry.radio_reliability.bler_does_not_identify_physical_mechanism",
+              "telemetry.radio_reliability.evaluate_ul_and_dl_independently",
+              "telemetry.radio_reliability.consider_signal_resource_and_link_adaptation_evidence",
+              "telemetry.signal_quality.do_not_equate_signal_strength_with_signal_quality",
+              "telemetry.signal_quality.healthy_rsrp_does_not_rule_out_interference",
+              "telemetry.signal_quality.poor_rsrp_may_support_coverage_hypothesis_but_does_not_prove_it",
+              "telemetry.temporal_analysis.average_min_max_do_not_prove_burstiness",
+              "telemetry.temporal_analysis.intermittency_requires_time_resolved_evidence",
+              "telemetry.temporal_analysis.degradation_requires_comparison_across_time_or_baseline",
+              "telemetry.sql.preserve_incident_scope",
+              "telemetry.sql.preserve_window_scope",
+              "telemetry.sql.never_expand_scope_without_explicit_reason",
+              "telemetry.sql.prefer_simple_duckdb_queries",
+              "telemetry.sql.split_complex_analysis_into_sequential_queries",
+              "telemetry.sql.use_only_available_schema",
+              "telemetry.sql.do_not_manufacture_missing_kpis",
+              "telemetry.escalation.hardware_hypothesis_should_request_alarm_or_log_evidence",
+              "telemetry.escalation.shared_dependency_hypothesis_should_request_topology_evidence",
+              "telemetry.escalation.unresolved_cross_domain_question_should_be_returned_to_rca",
+              "knowledge_usage.rag.use_when_domain_reference_knowledge_is_needed",
+              "knowledge_usage.rag.do_not_retrieve_when_current_context_is_sufficient",
+              "knowledge_usage.rag.prefer_domain_and_context_filtered_retrieval",
+              "knowledge_usage.rag.retrieved_documentation_is_knowledge_not_observed_evidence",
+              "knowledge_usage.rag.prefer_current_applicable_document_version",
+              "knowledge_usage.policy_precedence.organization_policy_overrides_general_model_knowledge",
+              "knowledge_usage.policy_precedence.applicable_specific_policy_overrides_general_policy",
+              "knowledge_usage.policy_precedence.incident_evidence_does_not_override_policy_constraints"
+            ]
+          },
+          "evidence_rules": {
+            "version": "1.0",
+            "evidence_levels": {
+              "confirmed": {
+                "description": "Directly demonstrated by available evidence.",
+                "allowed_language": [
+                  "confirmed",
+                  "demonstrates",
+                  "establishes"
+                ]
+              },
+              "supported": {
+                "description": "Multiple observations are consistent with the hypothesis but do not prove it.",
+                "allowed_language": [
+                  "supported",
+                  "consistent with",
+                  "evidence suggests"
+                ]
+              },
+              "possible": {
+                "description": "Plausible but insufficiently evidenced.",
+                "allowed_language": [
+                  "possible",
+                  "remains plausible",
+                  "cannot be ruled out"
+                ]
+              },
+              "contradicted": {
+                "description": "Available evidence materially conflicts with the hypothesis.",
+                "allowed_language": [
+                  "contradicted",
+                  "not supported by available evidence",
+                  "unlikely based on available evidence"
+                ]
+              },
+              "unassessable": {
+                "description": "Required evidence is unavailable.",
+                "allowed_language": [
+                  "cannot be determined",
+                  "insufficient evidence",
+                  "not observable from available data"
+                ]
+              }
+            },
+            "reasoning_rules": [
+              {
+                "rule_id": "NO_CAUSE_FROM_CORRELATION",
+                "rule": "Correlation or temporal alignment alone must not be described as proof of causation."
+              },
+              {
+                "rule_id": "NO_PROXY_AS_DIRECT_EVIDENCE",
+                "rule": "A proxy metric must not be presented as direct measurement unless the metric catalog explicitly defines that relationship."
+              },
+              {
+                "rule_id": "NO_MISSING_DATA_INFERENCE",
+                "rule": "Absence of a required metric must result in an evidence gap, not an inferred value."
+              },
+              {
+                "rule_id": "NO_ROOT_CAUSE_FROM_IMPAIRMENT",
+                "rule": "A confirmed impairment must not automatically be promoted to a physical root cause."
+              },
+              {
+                "rule_id": "CONTRADICTION_IS_EVIDENCE",
+                "rule": "Evidence that materially contradicts a hypothesis should be reported, not omitted."
+              },
+              {
+                "rule_id": "PREFER_DISCRIMINATING_EVIDENCE",
+                "rule": "Prefer evidence that distinguishes competing hypotheses over collecting additional unrelated metrics."
+              },
+              {
+                "rule_id": "STOP_WHEN_DOMAIN_EXHAUSTED",
+                "rule": "When remaining hypotheses require evidence outside the current domain, return the evidence gap and recommend the appropriate domain rather than continuing redundant investigation."
+              }
+            ]
+          }
+        },
+        "retrieved_intelligence": {
+          "telemetry_metrics": {
+            "input": {
+              "concepts": [
+                "UL_BLER (uplink block error rate)",
+                "UL_SNR (uplink signal-to-noise ratio)",
+                "UL_MCS (uplink modulation/coding indicator, time-resolved)",
+                "UL_PRB_utilization (uplink resource block utilization, time-resolved)",
+                "UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)"
+              ]
+            },
+            "output": {
+              "status": "completed",
+              "retrieval_type": "deterministic",
+              "catalog_version": "1.0",
+              "requested_concepts": [
+                "UL_BLER (uplink block error rate)",
+                "UL_SNR (uplink signal-to-noise ratio)",
+                "UL_MCS (uplink modulation/coding indicator, time-resolved)",
+                "UL_PRB_utilization (uplink resource block utilization, time-resolved)",
+                "UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)"
+              ],
+              "resolved_metrics": [
+                {
+                  "requested_concept": "UL_SNR (uplink signal-to-noise ratio)",
+                  "match_type": "token_overlap",
+                  "score": 217,
+                  "table": "telemetry_measurements",
+                  "metric": "UL_SNR",
+                  "concept": "uplink_signal_to_noise_ratio",
+                  "unit": "dB",
+                  "direction": "uplink",
+                  "aggregation": null,
+                  "meaning": "Uplink signal-to-noise ratio",
+                  "supports": [
+                    "uplink_signal_quality_assessment"
+                  ],
+                  "does_not_prove": [
+                    "interference_source",
+                    "physical_root_cause"
+                  ],
+                  "related_metrics": [
+                    "UL_BLER",
+                    "UL_MCS",
+                    "RSRP"
+                  ],
+                  "caution": null
+                },
+                {
+                  "requested_concept": "UL_SNR (uplink signal-to-noise ratio)",
+                  "match_type": "token_overlap",
+                  "score": 210,
+                  "table": "telemetry_summary",
+                  "metric": "min_ul_snr",
+                  "concept": "uplink_signal_to_noise_ratio",
+                  "unit": "dB",
+                  "direction": null,
+                  "aggregation": "minimum",
+                  "meaning": "Minimum uplink SNR observed",
+                  "supports": [],
+                  "does_not_prove": [],
+                  "related_metrics": [],
+                  "caution": "Minimum alone does not establish persistent poor signal quality"
+                },
+                {
+                  "requested_concept": "UL_SNR (uplink signal-to-noise ratio)",
+                  "match_type": "token_overlap",
+                  "score": 203,
+                  "table": "telemetry_summary",
+                  "metric": "avg_ul_snr",
+                  "concept": "uplink_signal_to_noise_ratio",
+                  "unit": "dB",
+                  "direction": null,
+                  "aggregation": "average",
+                  "meaning": "Average uplink signal-to-noise ratio",
+                  "supports": [
+                    "uplink_signal_quality_assessment"
+                  ],
+                  "does_not_prove": [
+                    "interference_source",
+                    "physical_root_cause"
+                  ],
+                  "related_metrics": [],
+                  "caution": null
+                },
+                {
+                  "requested_concept": "UL_BLER (uplink block error rate)",
+                  "match_type": "token_overlap",
+                  "score": 186,
+                  "table": "telemetry_measurements",
+                  "metric": "UL_BLER",
+                  "concept": "uplink_block_error_rate",
+                  "unit": "ratio",
+                  "direction": "uplink",
+                  "aggregation": null,
+                  "meaning": "Uplink block decoding error rate",
+                  "supports": [
+                    "uplink_reliability_impairment"
+                  ],
+                  "does_not_prove": [
+                    "packet_loss",
+                    "interference",
+                    "coverage_failure",
+                    "congestion",
+                    "physical_root_cause"
+                  ],
+                  "related_metrics": [
+                    "UL_MCS",
+                    "UL_SNR",
+                    "RSRP",
+                    "PRB_Utilization_UL"
+                  ],
+                  "caution": null
+                },
+                {
+                  "requested_concept": "UL_BLER (uplink block error rate)",
+                  "match_type": "token_overlap",
+                  "score": 180,
+                  "table": "telemetry_summary",
+                  "metric": "avg_ul_bler",
+                  "concept": "uplink_block_error_rate",
+                  "unit": "ratio",
+                  "direction": null,
+                  "aggregation": "average",
+                  "meaning": "Average uplink block error rate",
+                  "supports": [
+                    "uplink_reliability_impairment"
+                  ],
+                  "does_not_prove": [
+                    "packet_loss",
+                    "interference",
+                    "coverage_failure",
+                    "physical_root_cause"
+                  ],
+                  "related_metrics": [],
+                  "caution": null
+                },
+                {
+                  "requested_concept": "UL_BLER (uplink block error rate)",
+                  "match_type": "token_overlap",
+                  "score": 170,
+                  "table": "telemetry_summary",
+                  "metric": "max_ul_bler",
+                  "concept": "uplink_block_error_rate",
+                  "unit": "ratio",
+                  "direction": null,
+                  "aggregation": "maximum",
+                  "meaning": "Maximum uplink BLER observed in the window",
+                  "supports": [],
+                  "does_not_prove": [],
+                  "related_metrics": [],
+                  "caution": "Maximum alone does not establish persistence or intermittency"
+                },
+                {
+                  "requested_concept": "UL_PRB_utilization (uplink resource block utilization, time-resolved)",
+                  "match_type": "token_overlap",
+                  "score": 141,
+                  "table": "telemetry_summary",
+                  "metric": "avg_prb_utilization_ul",
+                  "concept": "uplink_resource_utilization",
+                  "unit": "dataset_defined",
+                  "direction": null,
+                  "aggregation": "average",
+                  "meaning": "Average uplink PRB utilization",
+                  "supports": [
+                    "uplink_resource_load_assessment"
+                  ],
+                  "does_not_prove": [
+                    "congestion"
+                  ],
+                  "related_metrics": [],
+                  "caution": "Unit/scale should be verified before applying numeric thresholds"
+                },
+                {
+                  "requested_concept": "UL_MCS (uplink modulation/coding indicator, time-resolved)",
+                  "match_type": "token_overlap",
+                  "score": 135,
+                  "table": "telemetry_summary",
+                  "metric": "avg_ul_mcs",
+                  "concept": "uplink_modulation_coding_scheme",
+                  "unit": "index",
+                  "direction": null,
+                  "aggregation": "average",
+                  "meaning": "Average uplink MCS",
+                  "supports": [
+                    "link_adaptation_behavior"
+                  ],
+                  "does_not_prove": [
+                    "root_cause",
+                    "interference"
+                  ],
+                  "related_metrics": [],
+                  "caution": null
+                },
+                {
+                  "requested_concept": "UL_MCS (uplink modulation/coding indicator, time-resolved)",
+                  "match_type": "token_overlap",
+                  "score": 135,
+                  "table": "telemetry_measurements",
+                  "metric": "UL_MCS",
+                  "concept": "uplink_modulation_coding_scheme",
+                  "unit": "index",
+                  "direction": "uplink",
+                  "aggregation": null,
+                  "meaning": "Uplink modulation and coding selection",
+                  "supports": [
+                    "uplink_link_adaptation_assessment"
+                  ],
+                  "does_not_prove": [
+                    "physical_root_cause"
+                  ],
+                  "related_metrics": [
+                    "UL_BLER",
+                    "UL_SNR",
+                    "RSRP"
+                  ],
+                  "caution": null
+                },
+                {
+                  "requested_concept": "UL_PRB_utilization (uplink resource block utilization, time-resolved)",
+                  "match_type": "token_overlap",
+                  "score": 135,
+                  "table": "telemetry_measurements",
+                  "metric": "PRB_Utilization_UL",
+                  "concept": "uplink_resource_utilization",
+                  "unit": "dataset_defined",
+                  "direction": "uplink",
+                  "aggregation": null,
+                  "meaning": "Uplink PRB utilization measurement",
+                  "supports": [
+                    "uplink_resource_load_assessment",
+                    "congestion_hypothesis_testing"
+                  ],
+                  "does_not_prove": [
+                    "congestion"
+                  ],
+                  "related_metrics": [
+                    "PRBs_UL_Current",
+                    "UL_NPRB",
+                    "UL_BLER",
+                    "UL_MCS",
+                    "TX_Bytes"
+                  ],
+                  "caution": "Verify scale before applying numeric congestion thresholds"
+                },
+                {
+                  "requested_concept": "UL buffer/queue indicator (e.g., uplink buffer occupancy and/or queue delay, time-resolved)",
+                  "match_type": "token_overlap",
+                  "score": 131,
+                  "table": "telemetry_measurements",
+                  "metric": "Estimated_UL_Buffer",
+                  "concept": "uplink_buffer_estimate",
+                  "unit": "dataset_defined",
+                  "direction": "uplink",
+                  "aggregation": null,
+                  "meaning": "Estimated uplink buffer quantity",
+                  "supports": [
+                    "uplink_queue_or_buffer_pressure_assessment"
+                  ],
+                  "does_not_prove": [],
+                  "related_metrics": [],
+                  "caution": "Exact unit and generation semantics must be confirmed before defining thresholds"
+                },
+                {
+                  "requested_concept": "UL_BLER (uplink block error rate)",
+                  "match_type": "token_overlap",
+                  "score": 116,
+                  "table": "telemetry_measurements",
+                  "metric": "DL_BLER",
+                  "concept": "downlink_block_error_rate",
+                  "unit": "ratio",
+                  "direction": "downlink",
+                  "aggregation": null,
+                  "meaning": "Downlink block decoding error rate",
+                  "supports": [
+                    "downlink_reliability_impairment"
+                  ],
+                  "does_not_prove": [
+                    "packet_loss",
+                    "interference",
+                    "coverage_failure",
+                    "congestion",
+                    "physical_root_cause"
+                  ],
+                  "related_metrics": [
+                    "DL_MCS",
+                    "RSRP",
+                    "PRB_Utilization_DL"
+                  ],
+                  "caution": null
+                }
+              ],
+              "unresolved_concepts": [],
+              "cross_metric_guidance": []
+            }
+          }
+        },
+        "sql_plan": {
+          "can_answer": true,
+          "sql": "WITH base AS (\n  SELECT\n    sample_index,\n    event_timestamp,\n    UL_BLER,\n    UL_SNR,\n    UL_MCS,\n    PRB_Utilization_UL,\n    Estimated_UL_Buffer\n  FROM telemetry_measurements\n  WHERE window_id = 'WIN-000037'\n)\nSELECT\n  -- Correlation signatures (mechanism-consistent patterns)\n  corr(UL_BLER, UL_SNR) AS corr_ul_bler_ul_snr,\n  corr(UL_BLER, PRB_Utilization_UL) AS corr_ul_bler_ul_prb_util,\n  corr(UL_BLER, Estimated_UL_Buffer) AS corr_ul_bler_ul_buffer,\n  corr(UL_BLER, UL_MCS) AS corr_ul_bler_ul_mcs,\n\n  -- Burst-on/burst-off signature: look at top UL_BLER samples\n  100.0 * SUM(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN 1 ELSE 0 END) / COUNT(*)\n    AS pct_samples_ul_bler_at_or_above_p95,\n\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN UL_SNR ELSE NULL END) AS avg_ul_snr_in_ul_bler_p95_bursts,\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN PRB_Utilization_UL ELSE NULL END) AS avg_ul_prb_util_in_ul_bler_p95_bursts,\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN Estimated_UL_Buffer ELSE NULL END) AS avg_ul_buffer_in_ul_bler_p95_bursts,\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN UL_MCS ELSE NULL END) AS avg_ul_mcs_in_ul_bler_p95_bursts\nFROM base;"
+        },
+        "sql_execution": {
+          "status": "failed",
+          "raw_sql": "WITH base AS (\n  SELECT\n    sample_index,\n    event_timestamp,\n    UL_BLER,\n    UL_SNR,\n    UL_MCS,\n    PRB_Utilization_UL,\n    Estimated_UL_Buffer\n  FROM telemetry_measurements\n  WHERE window_id = 'WIN-000037'\n)\nSELECT\n  -- Correlation signatures (mechanism-consistent patterns)\n  corr(UL_BLER, UL_SNR) AS corr_ul_bler_ul_snr,\n  corr(UL_BLER, PRB_Utilization_UL) AS corr_ul_bler_ul_prb_util,\n  corr(UL_BLER, Estimated_UL_Buffer) AS corr_ul_bler_ul_buffer,\n  corr(UL_BLER, UL_MCS) AS corr_ul_bler_ul_mcs,\n\n  -- Burst-on/burst-off signature: look at top UL_BLER samples\n  100.0 * SUM(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN 1 ELSE 0 END) / COUNT(*)\n    AS pct_samples_ul_bler_at_or_above_p95,\n\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN UL_SNR ELSE NULL END) AS avg_ul_snr_in_ul_bler_p95_bursts,\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN PRB_Utilization_UL ELSE NULL END) AS avg_ul_prb_util_in_ul_bler_p95_bursts,\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN Estimated_UL_Buffer ELSE NULL END) AS avg_ul_buffer_in_ul_bler_p95_bursts,\n  AVG(CASE WHEN UL_BLER >= quantile_cont(UL_BLER, 0.95) THEN UL_MCS ELSE NULL END) AS avg_ul_mcs_in_ul_bler_p95_bursts\nFROM base;",
+          "sqlglot_validated_sql": "WITH base AS (\n  SELECT\n    sample_index,\n    event_timestamp,\n    UL_BLER,\n    UL_SNR,\n    UL_MCS,\n    PRB_Utilization_UL,\n    Estimated_UL_Buffer\n  FROM telemetry_measurements\n  WHERE\n    window_id = 'WIN-000037'\n)\nSELECT\n  CORR(UL_BLER, UL_SNR) AS corr_ul_bler_ul_snr, /* Correlation signatures (mechanism-consistent patterns) */\n  CORR(UL_BLER, PRB_Utilization_UL) AS corr_ul_bler_ul_prb_util,\n  CORR(UL_BLER, Estimated_UL_Buffer) AS corr_ul_bler_ul_buffer,\n  CORR(UL_BLER, UL_MCS) AS corr_ul_bler_ul_mcs,\n  100.0 /* Burst-on/burst-off signature: look at top UL_BLER samples */ * SUM(CASE WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95) THEN 1 ELSE 0 END) / COUNT(*) AS pct_samples_ul_bler_at_or_above_p95,\n  AVG(CASE WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95) THEN UL_SNR ELSE NULL END) AS avg_ul_snr_in_ul_bler_p95_bursts,\n  AVG(\n    CASE\n      WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95)\n      THEN PRB_Utilization_UL\n      ELSE NULL\n    END\n  ) AS avg_ul_prb_util_in_ul_bler_p95_bursts,\n  AVG(\n    CASE\n      WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95)\n      THEN Estimated_UL_Buffer\n      ELSE NULL\n    END\n  ) AS avg_ul_buffer_in_ul_bler_p95_bursts,\n  AVG(CASE WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95) THEN UL_MCS ELSE NULL END) AS avg_ul_mcs_in_ul_bler_p95_bursts\nFROM base",
+          "scope_validation": "passed",
+          "stage": "duckdb_explain",
+          "error_type": "BinderException",
+          "error": "Binder Error: aggregate function calls cannot be nested\n\nLINE 19: ...: look at top UL_BLER samples */ * SUM(CASE WHEN UL_BLER >= QUANTILE_CONT(UL_BLER, 0.95) THEN 1 ELSE 0 END) / COUNT...\n                                                                        ^"
+        }
+      },
+      "output": {
+        "confirmed_observations": [
+          "The attempted telemetry SQL to compute BLER/SNR/PRB/buffer correlations and BLER burst (top-UL_BLER) statistics for window_id='WIN-000037' failed with a DuckDB Binder Error: “aggregate function calls cannot be nested” (caused by using QUANTILE_CONT(UL_BLER, 0.95) inside CASE/SUM)."
+        ],
+        "hypothesis_assessments": [
+          {
+            "hypothesis": "Poor uplink signal quality (coverage/interference) drives intermittent BLER increases and link adaptation instability.",
+            "status": "inconclusive",
+            "evidence": [
+              "No operational telemetry results were produced for UL_SNR, UL_MCS, UL_BLER burst timing, or whether PRB/buffer change at the same timestamps during degraded periods."
+            ]
+          },
+          {
+            "hypothesis": "Uplink radio reliability degradation (errors increase) occurs without strong signal-quality deterioration (e.g., reliability faults rather than pure SNR/coverage).",
+            "status": "inconclusive",
+            "evidence": [
+              "No operational telemetry results were produced to compare UL_BLER burst behavior against UL_SNR stability or to assess whether MCS adaptation shifts are absent/present during BLER spikes."
+            ]
+          },
+          {
+            "hypothesis": "Uplink resource congestion/scheduling pressure causes intermittent service degradation (PRB availability pressure, not primarily link quality).",
+            "status": "inconclusive",
+            "evidence": [
+              "No operational telemetry results were produced to test whether UL_PRB_utilization shows burst-like increases aligned to performance drops / UL_BLER spikes, or whether SNR lacks corresponding burst dips."
+            ]
+          },
+          {
+            "hypothesis": "Buffering/traffic-pressure (queue buildup) causes intermittent upload slowdowns; radio conditions may be secondary.",
+            "status": "inconclusive",
+            "evidence": [
+              "No operational telemetry results were produced to test burst-like growth/drain in Estimated_UL_Buffer (or queue metric semantics) aligned with UL_BLER/SNR behavior."
+            ]
+          },
+          {
+            "hypothesis": "Interaction between mechanisms (e.g., intermittent worse signal quality plus elevated resource/queue pressure) amplifies BLER/MCS instability and throughput drops.",
+            "status": "inconclusive",
+            "evidence": [
+              "No operational telemetry results were produced to perform burst-by-burst temporal comparisons across UL_SNR, UL_PRB_utilization, and Estimated_UL_Buffer simultaneously (needed to establish interaction-like combined signatures)."
+            ]
+          },
+          {
+            "hypothesis": "another telemetry mechanism",
+            "status": "inconclusive",
+            "evidence": [
+              "No additional mechanism-specific operational telemetry (e.g., retransmission counts, scheduling/queue delay indicators beyond Estimated_UL_Buffer) was queried successfully or shown available via operational results."
+            ]
+          }
+        ],
+        "evidence_gaps": [
+          "Time-resolved burst evidence for WIN-000037 was not obtained (UL_BLER burst detection and aligned averages/correlations could not be computed due to SQL failure).",
+          "No operational confirmation of temporal alignment between UL_BLER spikes and UL_SNR dips during the most severe degradation periods.",
+          "No operational evidence comparing UL_MCS instability/adaptation changes during BLER bursts vs non-burst periods.",
+          "No operational evidence of whether UL_PRB_utilization spikes align with degradation bursts and whether they align with UL_BLER/queue/buffer changes.",
+          "No operational evidence that buffer/queue buildup timing matches onset/recovery of upload degradation windows (drain behavior on recovery).",
+          "No operational access confirmed for additional discriminating telemetry (retransmissions, scheduling/queue delay) beyond the metrics listed and the column Estimated_UL_Buffer (semantics/scale not validated in operational output)."
+        ],
+        "context_quality_issues": [
+          "The investigation intent is clear, but the operational execution did not produce any telemetry-derived evidence, so all hypotheses remain unassessed from the required burst-on/burst-off time-alignment tests.",
+          "The SQL attempted to compute QUANTILE_CONT-based thresholds and then use them inside aggregate expressions in the same SELECT, leading to nested-aggregate failure; this prevented obtaining the intended time-resolved (burst-focused) evidence.",
+          "The query bundled multiple correlation and burst-statistic computations into one complex statement; per policy, this increased fragility—smaller focused queries would reduce the chance of total failure.",
+          "Metric semantics/scale cautions exist for PRB utilization and Estimated_UL_Buffer, but no operational results were returned to validate their behavior for thresholding or congestion interpretation."
+        ],
+        "next_best_action": "Re-run with a burst-thresholding approach that avoids nested aggregates (e.g., compute UL_BLER p95 in a separate CTE, then flag per-sample UL_BLER>=p95 and compute correlations/means on the flagged subset). Then add time-resolved burst-window extraction to directly compare UL_SNR/UL_MCS/UL_PRB/Estimated_UL_Buffer during burst vs recovery segments.",
+        "summary": "Only one operational evidence item exists: the main WIN-000037 telemetry query failed to execute due to a nested-aggregate SQL error. As a result, no confirmed or even supported/discriminating telemetry patterns were produced, so every explicit hypothesis is INCONCLUSIVE. The context is otherwise clear, but the operational analysis step lacked successful execution, and the SQL design was too brittle for the required burst-on/burst-off temporal comparisons."
+      },
+      "metadata": {
+        "estimated_input_tokens": 6449
+      }
+    },
+    {
+      "stage": "07_context_footprint",
+      "agent": "trace_system",
+      "timestamp": "2026-08-28T01:38:36.831621+05:30",
+      "input": null,
+      "output": {
+        "incident_parser": 398,
+        "telemetry_planner": 2957,
+        "sql_planner": 4306,
+        "telemetry_finalizer": 6449
+      },
+      "metadata": {
+        "note": "Token counts are rough character/4 estimates."
+      }
+    }
+  ]
+}

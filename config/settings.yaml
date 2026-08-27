@@ -1,0 +1,40 @@
+llm:
+  default:
+    model: "gpt-5.4-nano"
+    reasoning_effort: "low"
+    temperature: 0
+    use_responses_api: true
+
+  incident_parser:
+    reasoning_effort: "low"
+
+  rca:
+    reasoning_effort: "medium"
+
+  telemetry:
+    reasoning_effort: "medium"
+
+  alarms:
+    reasoning_effort: "medium"
+
+  topology:
+    reasoning_effort: "medium"
+
+  sql:
+    reasoning_effort: "low"
+
+  domain_finalizer:
+    reasoning_effort: "low"
+
+runtime:
+  max_investigation_rounds: 5
+  max_domain_tool_calls: 5
+  max_sql_repair_attempts: 1
+  max_sql_result_rows: 150
+  save_traces: true
+
+context:
+  max_confirmed_facts_for_agent: 6
+  max_verdicts_for_agent: 6
+  max_open_questions_for_agent: 4
+  max_evidence_gaps_for_agent: 4

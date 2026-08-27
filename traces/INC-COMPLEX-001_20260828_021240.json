@@ -1,0 +1,937 @@
+{
+  "final_result": {
+    "incident": {
+      "incident_id": "INC-COMPLEX-001",
+      "problem_statement": "Users report intermittent uplink performance degradation during WIN-000037. Upload performance drops sharply for short periods and then recovers. Monitoring suggests changes in UL_BLER, UL_SNR, UL_MCS stability, uplink PRB utilization, and possible buffer buildup during degraded intervals.",
+      "investigation_goal": "Identify which reported telemetry patterns are most consistent with one or more mechanisms (poor uplink signal quality, uplink radio reliability degradation, uplink resource congestion, buffering/traffic-pressure effects, interaction between mechanisms, or another mechanism) without assuming causation; if not distinguishable, specify evidence gaps.",
+      "symptoms": [
+        "Intermittent uplink performance degradation (not continuous) during WIN-000037",
+        "Upload performance drops sharply for short periods and then recovers",
+        "UL_BLER increases during some degraded periods",
+        "UL_SNR fluctuates",
+        "UL_MCS appears unstable",
+        "Uplink PRB utilization increases during degraded periods",
+        "Buffer buildup may occur during degraded periods"
+      ],
+      "window_ids": [
+        "WIN-000037"
+      ],
+      "component_ids": [],
+      "site_ids": [],
+      "explicit_hypotheses": [
+        "More consistent with poor uplink signal quality",
+        "More consistent with uplink radio reliability degradation",
+        "More consistent with uplink resource congestion",
+        "More consistent with buffering/traffic-pressure effects",
+        "More consistent with an interaction between multiple mechanisms",
+        "More consistent with another mechanism"
+      ],
+      "constraints": [
+        "Do not investigate",
+        "Do not diagnose",
+        "Do not assume correlation proves causation",
+        "Do not force a conclusion if telemetry evidence cannot distinguish mechanisms; identify evidence gaps instead",
+        "Do not invent identifiers, measurements, or root causes"
+      ]
+    },
+    "rounds_used": 2,
+    "confirmed_facts": [
+      {
+        "fact_id": "t1",
+        "domain": "telemetry",
+        "statement": "For WIN-000037, UL_BLER is higher in degraded sub-intervals than recovered (~0.174 vs ~0.091 using UL_BLER\u226590th percentile).",
+        "confidence": "HIGH",
+        "source_type": "existing",
+        "source_ref": null
+      },
+      {
+        "fact_id": "t2",
+        "domain": "telemetry",
+        "statement": "In degraded sub-intervals, UL_MCS is lower and more variable than in recovered (~13.50 vs ~16.33), with BLER anti-correlated with UL_MCS during degraded samples.",
+        "confidence": "HIGH",
+        "source_type": "existing",
+        "source_ref": null
+      },
+      {
+        "fact_id": "t3",
+        "domain": "telemetry",
+        "statement": "Congestion/buffering is not elevated during degraded: mean UL PRB utilization and Estimated_UL_Buffer are lower in degraded (~1.24 and ~3624) than recovered (~1.76 and ~3833), and BLER is anti-correlated with Estimated_UL_Buffer within degraded intervals.",
+        "confidence": "HIGH",
+        "source_type": "existing",
+        "source_ref": null
+      },
+      {
+        "fact_id": "t4",
+        "domain": "telemetry",
+        "statement": "Timing: after the first BLER-tagged degraded time (~00:05:44.500), UL_MCS low appears first (~00:05:44.800); subsequent threshold excursions occur for Estimated_UL_Buffer (~00:05:45.100), UL PRB utilization (~00:05:45.700), and UL_SNR low (~00:05:46.000).",
+        "confidence": "MEDIUM",
+        "source_type": "existing",
+        "source_ref": null
+      }
+    ],
+    "hypothesis_verdicts": [
+      {
+        "hypothesis_id": "a",
+        "domain": "telemetry",
+        "hypothesis": "Primary mechanism is uplink radio reliability/signal-quality degradation (BLER rise with SNR/instability and/or retransmission signatures; link adaptation via MCS fall/variability).",
+        "status": "supported",
+        "reason": "Strong discriminators align: UL_BLER increases while UL_MCS decreases and becomes more variable, including BLER\u2013MCS anti-correlation during degraded intervals; MCS drops occur earliest after degradation onset.",
+        "confidence": "HIGH"
+      },
+      {
+        "hypothesis_id": "b",
+        "domain": "telemetry",
+        "hypothesis": "Primary mechanism is uplink resource congestion/buffering (PRB/queue/buffer and scheduler/latency increase driving degradation).",
+        "status": "contradicted",
+        "reason": "During degraded intervals, PRB utilization and Estimated_UL_Buffer are lower on average than recovered, and BLER is anti-correlated with Estimated_UL_Buffer; any PRB/buffer threshold crossings appear transient after MCS changes rather than as sustained congestion buildup.",
+        "confidence": "HIGH"
+      },
+      {
+        "hypothesis_id": "c",
+        "domain": "telemetry",
+        "hypothesis": "Radio impairment and congestion interact, with congestion/buffering acting as a secondary/transient effect rather than the root driver.",
+        "status": "inconclusive",
+        "reason": "Evidence shows short transient threshold excursions after MCS/BLER changes, but lack of scheduler-delay/queue semantics and mismatch in degraded averages prevents confirming congestion as a meaningful secondary contributor.",
+        "confidence": "LOW"
+      },
+      {
+        "hypothesis_id": "hyp_a",
+        "domain": "telemetry",
+        "hypothesis": "Uplink radio reliability impairment (degraded signal/link quality) is the driver.",
+        "status": "supported",
+        "reason": "Degraded intervals show higher UL_BLER and lower/less-stable UL_MCS with BLER anti-correlated to MCS, consistent with radio reliability degradation.",
+        "confidence": "HIGH"
+      },
+      {
+        "hypothesis_id": "hyp_b",
+        "domain": "telemetry",
+        "hypothesis": "Uplink resource congestion/buffering is the primary driver of degraded BLER behavior.",
+        "status": "contradicted",
+        "reason": "Degraded intervals have lower UL PRB utilization and lower Estimated_UL_Buffer than recovered; BLER is anti-correlated with Estimated_UL_Buffer in degraded rather than aligned with congestion elevation.",
+        "confidence": "HIGH"
+      },
+      {
+        "hypothesis_id": "hyp_c",
+        "domain": "telemetry",
+        "hypothesis": "A meaningful secondary mechanism is an interaction of reliability degradation with congestion/backlog effects.",
+        "status": "inconclusive",
+        "reason": "Short-lived threshold excursions exist, but the available telemetry does not provide scheduler/backlog semantics needed to confirm congestion/backlog as a secondary retransmission/reliability driver.",
+        "confidence": "MEDIUM"
+      }
+    ],
+    "open_questions": [
+      {
+        "question_id": "q1",
+        "domain": "telemetry",
+        "question": "Do retransmission-related indicators (HARQ/RLC retransmissions, etc.) rise during the degraded sub-intervals in WIN-000037 to directly validate radio reliability impairment as the driver?",
+        "required_evidence": "Time-aligned HARQ/RLC retransmission counts/rates and/or similar link-failure indicators for the degraded vs recovered windows."
+      },
+      {
+        "question_id": "q2",
+        "domain": "telemetry",
+        "question": "Does the \u201cEstimated_UL_Buffer\u201d metric correspond to true queue backlog (and scheduler delay/latency increases), or is it a different construct such that buffer anti-correlation with BLER could reflect something other than congestion?",
+        "required_evidence": "Telemetry clarifying buffer semantics plus scheduler latency/queue depth/backlog metrics aligned with the same degraded/recovered tagging."
+      },
+      {
+        "question_id": "oq_retx",
+        "domain": "telemetry",
+        "question": "For WIN-000037, do HARQ and/or RLC retransmission counts/rates (or radio link-failure counters) increase during BLER-tagged degraded sub-intervals compared to recovered ones, time-aligned?",
+        "required_evidence": "Direct HARQ retransmission metrics and/or RLC retransmission/link-failure counters for the same window/scope as UL_BLER tagging, including degraded vs recovered sub-interval time alignment."
+      },
+      {
+        "question_id": "oq_scheduler_semantics",
+        "domain": "telemetry",
+        "question": "Do Estimated_UL_Buffer and related telemetry map to queue depth/backlog age and scheduler latency for WIN-000037, enabling congestion-to-reliability (retransmission) interpretation?",
+        "required_evidence": "Scheduler/backlog-related counters (e.g., queue depth/age, scheduler latency/HOL blocking, retransmission/ARQ linkage) or a data dictionary tying Estimated_UL_Buffer to retransmission-relevant semantics."
+      }
+    ],
+    "evidence_gaps": [
+      {
+        "domain": "telemetry",
+        "missing_evidence": "HARQ/RLC retransmission or other radio reliability failure counters for WIN-000037 during degraded vs recovered intervals.",
+        "reason": "Not present in the synthesis; without these, the radio mechanism is inferred from BLER/MCS patterns rather than directly validated by retransmission behavior."
+      },
+      {
+        "domain": "telemetry",
+        "missing_evidence": "Scheduler latency/queue backlog/backpressure KPIs and additional radio quality metrics (e.g., CQI/RSRQ/eSINR) time-aligned to degraded/recovered windows.",
+        "reason": "Buffer/PRB indicators alone do not establish congestion semantics, and limited radio quality dimensions (only SNR mentioned; RSRP referenced) restrict diagnosing the physical cause of BLER increase (interference/multipath vs pure adaptation)."
+      },
+      {
+        "domain": "telemetry",
+        "missing_evidence": "HARQ retransmission metrics and/or RLC retransmission counts/rates (or radio link-failure counters) for WIN-000037, time-aligned to BLER-tagged degraded vs recovered sub-intervals.",
+        "reason": "The provided telemetry schema lacks explicit HARQ/RLC retransmission/link-failure counter columns for this window."
+      },
+      {
+        "domain": "telemetry",
+        "missing_evidence": "Scheduler/backlog semantics needed to interpret congestion indicators (e.g., backlog depth/age, scheduler latency, HOL blocking, mapping from buffer estimates to retransmission/ARQ behavior).",
+        "reason": "Estimated_UL_Buffer/PRB utilization alone does not establish congestion as a retransmission-relevant secondary mechanism without backlog-to-scheduler metrics."
+      }
+    ],
+    "final_rca": {
+      "action": "conclude",
+      "conclusion": "WIN-000037 intermittent uplink degradation is most consistent with an uplink radio reliability / signal-quality degradation mechanism (higher UL_BLER with lower and more variable UL_MCS, including BLER\u2013MCS anti-correlation during degraded intervals). Evidence contradicts congestion/buffering as a primary driver because UL PRB utilization and Estimated_UL_Buffer are lower on average in degraded sub-intervals than in recovered ones, with BLER also anti-correlated to Estimated_UL_Buffer within degraded intervals. Buffering/congestion effects may occur transiently, but current telemetry cannot confirm it as a meaningful secondary contributor. Remaining evidence gap: lack of time-aligned HARQ/RLC retransmission or radio link-failure counters to directly validate the reliability impairment via retransmission behavior.",
+      "confidence": "HIGH",
+      "reasoning_summary": "Confirmed telemetry discriminators strongly align with radio reliability degradation (BLER\u2191, UL_MCS\u2193/more variable, BLER anti-correlated with UL_MCS). Concurrent indicators do not align with congestion as primary cause (PRB utilization and Estimated_UL_Buffer are lower during degraded, and BLER is anti-correlated with buffer estimate). Timing suggests MCS low appears before subsequent threshold excursions, further supporting a link-quality/reliability onset rather than backlog-first congestion.",
+      "stop_reason": "sufficient_evidence"
+    }
+  },
+  "trace": [
+    {
+      "timestamp": "2026-08-28T02:11:03.561621+05:30",
+      "stage": "incident_parser",
+      "input": {
+        "raw_incident": "INC-COMPLEX-001\n\nUsers report intermittent uplink performance degradation during WIN-000037.\n\nThe degradation is not continuous. Upload performance appears to drop\nsharply for short periods and then recover.\n\nInitial monitoring suggests:\n- UL_BLER may increase during some degraded periods.\n- UL_SNR may fluctuate.\n- UL_MCS appears unstable.\n- Uplink PRB utilization may increase.\n- Buffer buildup may occur.\n\nDetermine whether the telemetry evidence is more consistent with:\n\n1. poor uplink signal quality,\n2. uplink radio reliability degradation,\n3. uplink resource congestion,\n4. buffering/traffic-pressure effects,\n5. interaction between multiple mechanisms,\n6. or another mechanism.\n\nDo not assume correlation proves causation.\n\nIf available evidence cannot distinguish the mechanisms, identify the\nevidence gap rather than forcing a conclusion."
+      },
+      "output": {
+        "incident_id": "INC-COMPLEX-001",
+        "problem_statement": "Users report intermittent uplink performance degradation during WIN-000037. Upload performance drops sharply for short periods and then recovers. Monitoring suggests changes in UL_BLER, UL_SNR, UL_MCS stability, uplink PRB utilization, and possible buffer buildup during degraded intervals.",
+        "investigation_goal": "Identify which reported telemetry patterns are most consistent with one or more mechanisms (poor uplink signal quality, uplink radio reliability degradation, uplink resource congestion, buffering/traffic-pressure effects, interaction between mechanisms, or another mechanism) without assuming causation; if not distinguishable, specify evidence gaps.",
+        "symptoms": [
+          "Intermittent uplink performance degradation (not continuous) during WIN-000037",
+          "Upload performance drops sharply for short periods and then recovers",
+          "UL_BLER increases during some degraded periods",
+          "UL_SNR fluctuates",
+          "UL_MCS appears unstable",
+          "Uplink PRB utilization increases during degraded periods",
+          "Buffer buildup may occur during degraded periods"
+        ],
+        "window_ids": [
+          "WIN-000037"
+        ],
+        "component_ids": [],
+        "site_ids": [],
+        "explicit_hypotheses": [
+          "More consistent with poor uplink signal quality",
+          "More consistent with uplink radio reliability degradation",
+          "More consistent with uplink resource congestion",
+          "More consistent with buffering/traffic-pressure effects",
+          "More consistent with an interaction between multiple mechanisms",
+          "More consistent with another mechanism"
+        ],
+        "constraints": [
+          "Do not investigate",
+          "Do not diagnose",
+          "Do not assume correlation proves causation",
+          "Do not force a conclusion if telemetry evidence cannot distinguish mechanisms; identify evidence gaps instead",
+          "Do not invent identifiers, measurements, or root causes"
+        ]
+      }
+    },
+    {
+      "timestamp": "2026-08-28T02:11:07.587175+05:30",
+      "stage": "rca",
+      "input": {
+        "round": 0,
+        "compact_state": {
+          "confirmed_fact_count": 0,
+          "verdict_count": 0,
+          "open_question_count": 0,
+          "evidence_gap_count": 0
+        }
+      },
+      "output": {
+        "action": "request_more",
+        "request": {
+          "request_id": "INC-COMPLEX-001-R1-TLM",
+          "domain": "telemetry",
+          "question": "For WIN-000037, during the sharp upload-degradation intervals vs recovery intervals, do the most discriminating indicators point primarily to (a) uplink radio reliability/signal-quality degradation (e.g., BLER rise, SNR drop/instability, HARQ/RLC retransmissions increase, MCS fall) or (b) uplink resource congestion/buffering (e.g., PRB utilization increase accompanied by queue/Buffer depth growth and scheduler/latency increase)? Also summarize the relative timing (which set of metrics rises first).",
+          "evidence_goal": "Discriminate competing mechanisms by verifying (1) presence/absence of retransmission/BLER signatures consistent with radio reliability vs (2) queue/buffering and scheduler-delay signatures consistent with congestion, and (3) the temporal order of these changes during degraded vs recovered sub-intervals."
+        },
+        "confidence": "MEDIUM",
+        "reasoning_summary": "No confirmed facts are available yet. The fastest way to distinguish between radio-quality/reliability vs congestion/buffering mechanisms is telemetry that compares degraded vs recovered intervals and checks both discriminating metric families and their timing relationships."
+      }
+    },
+    {
+      "timestamp": "2026-08-28T02:12:03.142786+05:30",
+      "stage": "telemetry_specialist",
+      "input": {
+        "task": {
+          "request_id": "INC-COMPLEX-001-R1-TLM",
+          "domain": "telemetry",
+          "question": "For WIN-000037, during the sharp upload-degradation intervals vs recovery intervals, do the most discriminating indicators point primarily to (a) uplink radio reliability/signal-quality degradation (e.g., BLER rise, SNR drop/instability, HARQ/RLC retransmissions increase, MCS fall) or (b) uplink resource congestion/buffering (e.g., PRB utilization increase accompanied by queue/Buffer depth growth and scheduler/latency increase)? Also summarize the relative timing (which set of metrics rises first).",
+          "evidence_goal": "Discriminate competing mechanisms by verifying (1) presence/absence of retransmission/BLER signatures consistent with radio reliability vs (2) queue/buffering and scheduler-delay signatures consistent with congestion, and (3) the temporal order of these changes during degraded vs recovered sub-intervals."
+        }
+      },
+      "output": {
+        "domain_update": {
+          "confirmed": [
+            {
+              "fact_id": "t1",
+              "domain": "telemetry",
+              "statement": "For WIN-000037, UL_BLER is higher in degraded sub-intervals than recovered (~0.174 vs ~0.091 using UL_BLER\u226590th percentile).",
+              "confidence": "HIGH",
+              "source_type": "existing",
+              "source_ref": null
+            },
+            {
+              "fact_id": "t2",
+              "domain": "telemetry",
+              "statement": "In degraded sub-intervals, UL_MCS is lower and more variable than in recovered (~13.50 vs ~16.33), with BLER anti-correlated with UL_MCS during degraded samples.",
+              "confidence": "HIGH",
+              "source_type": "existing",
+              "source_ref": null
+            },
+            {
+              "fact_id": "t3",
+              "domain": "telemetry",
+              "statement": "Congestion/buffering is not elevated during degraded: mean UL PRB utilization and Estimated_UL_Buffer are lower in degraded (~1.24 and ~3624) than recovered (~1.76 and ~3833), and BLER is anti-correlated with Estimated_UL_Buffer within degraded intervals.",
+              "confidence": "HIGH",
+              "source_type": "existing",
+              "source_ref": null
+            },
+            {
+              "fact_id": "t4",
+              "domain": "telemetry",
+              "statement": "Timing: after the first BLER-tagged degraded time (~00:05:44.500), UL_MCS low appears first (~00:05:44.800); subsequent threshold excursions occur for Estimated_UL_Buffer (~00:05:45.100), UL PRB utilization (~00:05:45.700), and UL_SNR low (~00:05:46.000).",
+              "confidence": "MEDIUM",
+              "source_type": "existing",
+              "source_ref": null
+            }
+          ],
+          "verdicts": [
+            {
+              "hypothesis_id": "a",
+              "domain": "telemetry",
+              "hypothesis": "Primary mechanism is uplink radio reliability/signal-quality degradation (BLER rise with SNR/instability and/or retransmission signatures; link adaptation via MCS fall/variability).",
+              "status": "supported",
+              "reason": "Strong discriminators align: UL_BLER increases while UL_MCS decreases and becomes more variable, including BLER\u2013MCS anti-correlation during degraded intervals; MCS drops occur earliest after degradation onset.",
+              "confidence": "HIGH"
+            },
+            {
+              "hypothesis_id": "b",
+              "domain": "telemetry",
+              "hypothesis": "Primary mechanism is uplink resource congestion/buffering (PRB/queue/buffer and scheduler/latency increase driving degradation).",
+              "status": "contradicted",
+              "reason": "During degraded intervals, PRB utilization and Estimated_UL_Buffer are lower on average than recovered, and BLER is anti-correlated with Estimated_UL_Buffer; any PRB/buffer threshold crossings appear transient after MCS changes rather than as sustained congestion buildup.",
+              "confidence": "HIGH"
+            },
+            {
+              "hypothesis_id": "c",
+              "domain": "telemetry",
+              "hypothesis": "Radio impairment and congestion interact, with congestion/buffering acting as a secondary/transient effect rather than the root driver.",
+              "status": "inconclusive",
+              "reason": "Evidence shows short transient threshold excursions after MCS/BLER changes, but lack of scheduler-delay/queue semantics and mismatch in degraded averages prevents confirming congestion as a meaningful secondary contributor.",
+              "confidence": "LOW"
+            }
+          ],
+          "open_questions": [
+            {
+              "question_id": "q1",
+              "domain": "telemetry",
+              "question": "Do retransmission-related indicators (HARQ/RLC retransmissions, etc.) rise during the degraded sub-intervals in WIN-000037 to directly validate radio reliability impairment as the driver?",
+              "required_evidence": "Time-aligned HARQ/RLC retransmission counts/rates and/or similar link-failure indicators for the degraded vs recovered windows."
+            },
+            {
+              "question_id": "q2",
+              "domain": "telemetry",
+              "question": "Does the \u201cEstimated_UL_Buffer\u201d metric correspond to true queue backlog (and scheduler delay/latency increases), or is it a different construct such that buffer anti-correlation with BLER could reflect something other than congestion?",
+              "required_evidence": "Telemetry clarifying buffer semantics plus scheduler latency/queue depth/backlog metrics aligned with the same degraded/recovered tagging."
+            }
+          ],
+          "evidence_gaps": [
+            {
+              "domain": "telemetry",
+              "missing_evidence": "HARQ/RLC retransmission or other radio reliability failure counters for WIN-000037 during degraded vs recovered intervals.",
+              "reason": "Not present in the synthesis; without these, the radio mechanism is inferred from BLER/MCS patterns rather than directly validated by retransmission behavior."
+            },
+            {
+              "domain": "telemetry",
+              "missing_evidence": "Scheduler latency/queue backlog/backpressure KPIs and additional radio quality metrics (e.g., CQI/RSRQ/eSINR) time-aligned to degraded/recovered windows.",
+              "reason": "Buffer/PRB indicators alone do not establish congestion semantics, and limited radio quality dimensions (only SNR mentioned; RSRP referenced) restrict diagnosing the physical cause of BLER increase (interference/multipath vs pure adaptation)."
+            }
+          ],
+          "summary": "For WIN-000037, the most discriminating telemetry supports a primary uplink radio reliability/link-adaptation impairment (UL_BLER\u2191 with UL_MCS\u2193 and higher variability; BLER anti-correlated with MCS), with UL_MCS dropping earliest after degradation onset. Congestion/buffering is contradicted by lower PRB utilization and Estimated_UL_Buffer during degraded periods (and BLER anti-correlation with buffer), though transient threshold crossings occur shortly after MCS/BLE degradation begins."
+        },
+        "tool_trace": [
+          {
+            "tool": "telemetry_schema",
+            "args": {},
+            "result": "telemetry_measurements(window_id VARCHAR, sample_index BIGINT, event_timestamp TIMESTAMP, RSRP DOUBLE, DL_BLER DOUBLE, DL_MCS DOUBLE, UL_BLER DOUBLE, UL_MCS DOUBLE, UL_NPRB DOUBLE, UL_SNR DOUBLE, TX_Bytes DOUBLE, RX_Bytes DOUBLE, Estimated_UL_Buffer DOUBLE, PRBs_DL_Current DOUBLE, PRBs_UL_Current DOUBLE, PRB_Utilization_DL DOUBLE, PRB_Utilization_UL DOUBLE, UL_Protocol VARCHAR, UL_NumberOfPackets DOUBLE, DL_Protocol VARCHAR, DL_NumberOfPackets DOUBLE)\ntelemetry_summary(window_id VARCHAR, start_time TIMESTAMP, end_time TIMESTAMP, sample_count BIGINT, avg_rsrp DOUBLE, min_rsrp DOUBLE, max_rsrp DOUBLE, avg_dl_bler DOUBLE, max_dl_bler DOUBLE, avg_ul_bler DOUBLE, max_ul_bler DOUBLE, avg_ul_snr DOUBLE, min_ul_snr DOUBLE, avg_dl_mcs DOUBLE, avg_ul_mcs DOUBLE, avg_prb_utilization_dl DOUBLE, avg_prb_utilization_ul DOUBLE, avg_tx_bytes DOUBLE, avg_rx_bytes DOUBLE)\ntelemetry_windows(window_id VARCHAR, start_time TIMESTAMP, end_time TIMESTAMP, sampling_rate BIGINT, zone VARCHAR, application VARCHAR, mobility VARCHAR, congestion VARCHAR, anomaly_present VARCHAR)"
+          },
+          {
+            "tool": "telemetry_sql",
+            "args": {
+              "purpose": "Assess which mechanism (radio reliability vs congestion/buffering) best matches WIN-000037 by comparing degraded (UL_BLER high) vs recovery (UL_BLER low) intervals and estimating which metrics cross thresholds first after degradation onset.",
+              "sql": "WITH m AS (\n  SELECT\n    event_timestamp,\n    sample_index,\n    UL_BLER,\n    UL_SNR,\n    UL_MCS,\n    PRB_Utilization_UL,\n    Estimated_UL_Buffer\n  FROM telemetry_measurements\n  WHERE window_id = 'WIN-000037'\n), stats AS (\n  SELECT\n    percentile_cont(0.90) WITHIN GROUP (ORDER BY UL_BLER)  AS ul_bler_p90,\n    percentile_cont(0.10) WITHIN GROUP (ORDER BY UL_SNR)   AS ul_snr_p10,\n    percentile_cont(0.90) WITHIN GROUP (ORDER BY PRB_Utilization_UL) AS prb_util_ul_p90,\n    percentile_cont(0.90) WITHIN GROUP (ORDER BY Estimated_UL_Buffer) AS buffer_p90,\n    percentile_cont(0.10) WITHIN GROUP (ORDER BY UL_MCS)    AS ul_mcs_p10\n  FROM m\n), labeled AS (\n  SELECT\n    m.*, \n    s.*,\n    CASE WHEN UL_BLER >= s.ul_bler_p90 THEN 1 ELSE 0 END AS degraded_flag,\n    CASE WHEN UL_SNR <= s.ul_snr_p10 THEN 1 ELSE 0 END AS snr_low_flag,\n    CASE WHEN PRB_Utilization_UL >= s.prb_util_ul_p90 THEN 1 ELSE 0 END AS prb_high_flag,\n    CASE WHEN Estimated_UL_Buffer >= s.buffer_p90 THEN 1 ELSE 0 END AS buffer_high_flag,\n    CASE WHEN UL_MCS <= s.ul_mcs_p10 THEN 1 ELSE 0 END AS mcs_low_flag\n  FROM m\n  CROSS JOIN stats s\n),\nagg AS (\n  SELECT\n    degraded_flag,\n    AVG(UL_BLER) AS avg_ul_bler,\n    AVG(UL_SNR) AS avg_ul_snr,\n    STDDEV_SAMP(UL_SNR) AS std_ul_snr,\n    AVG(UL_MCS) AS avg_ul_mcs,\n    STDDEV_SAMP(UL_MCS) AS std_ul_mcs,\n    AVG(PRB_Utilization_UL) AS avg_prb_util_ul,\n    AVG(Estimated_UL_Buffer) AS avg_est_ul_buffer,\n    MAX(Estimated_UL_Buffer) AS max_est_ul_buffer\n  FROM labeled\n  GROUP BY degraded_flag\n),\nonset AS (\n  SELECT\n    MIN(event_timestamp) FILTER (WHERE degraded_flag=1) AS first_degraded_time\n  FROM labeled\n),\norder_check AS (\n  SELECT\n    o.first_degraded_time,\n    MIN(l.event_timestamp) FILTER (WHERE l.snr_low_flag=1 AND l.event_timestamp >= o.first_degraded_time) AS first_snr_low_after_degraded,\n    MIN(l.event_timestamp) FILTER (WHERE l.prb_high_flag=1 AND l.event_timestamp >= o.first_degraded_time) AS first_prb_high_after_degraded,\n    MIN(l.event_timestamp) FILTER (WHERE l.buffer_high_flag=1 AND l.event_timestamp >= o.first_degraded_time) AS first_buffer_high_after_degraded,\n    MIN(l.event_timestamp) FILTER (WHERE l.mcs_low_flag=1 AND l.event_timestamp >= o.first_degraded_time) AS first_mcs_low_after_degraded\n  FROM onset o\n  JOIN labeled l ON 1=1\n  GROUP BY o.first_degraded_time\n)\nSELECT\n  (SELECT ul_bler_p90 FROM stats) AS ul_bler_p90,\n  (SELECT ul_snr_p10 FROM stats) AS ul_snr_p10,\n  (SELECT prb_util_ul_p90 FROM stats) AS prb_util_ul_p90,\n  (SELECT buffer_p90 FROM stats) AS buffer_p90,\n  (SELECT ul_mcs_p10 FROM stats) AS ul_mcs_p10,\n  -- aggregates: degraded_flag=1 vs recovered\n  (SELECT * FROM agg WHERE degraded_flag=1) AS degraded_agg,\n  (SELECT * FROM agg WHERE degraded_flag=0) AS recovered_agg,\n  -- temporal order anchors\n  (SELECT * FROM order_check) AS temporal_order_check;",
+              "window_ids": [
+                "WIN-000037"
+              ]
+            },
+            "result": "{\"status\": \"completed\", \"repair_used\": true, \"sql\": \"WITH m AS (\\n  SELECT\\n    event_timestamp,\\n    sample_index,\\n    UL_BLER,\\n    UL_SNR,\\n    UL_MCS,\\n    PRB_Utilization_UL,\\n    Estimated_UL_Buffer\\n  FROM telemetry_measurements\\n  WHERE\\n    window_id = 'WIN-000037'\\n), stats AS (\\n  SELECT\\n    QUANTILE_CONT(UL_BLER, 0.90\\n    ORDER BY\\n      UL_BLER) AS ul_bler_p90,\\n    QUANTILE_CONT(UL_SNR, 0.10\\n    ORDER BY\\n      UL_SNR) AS ul_snr_p10,\\n    QUANTILE_CONT(PRB_Utilization_UL, 0.90\\n    ORDER BY\\n      PRB_Utilization_UL) AS prb_util_ul_p90,\\n    QUANTILE_CONT(Estimated_UL_Buffer, 0.90\\n    ORDER BY\\n      Estimated_UL_Buffer) AS buffer_p90,\\n    QUANTILE_CONT(UL_MCS, 0.10\\n    ORDER BY\\n      UL_MCS) AS ul_mcs_p10\\n  FROM m\\n), labeled AS (\\n  SELECT\\n    m.*,\\n    s.*,\\n    CASE WHEN m.UL_BLER >= s.ul_bler_p90 THEN 1 ELSE 0 END AS degraded_flag,\\n    CASE WHEN m.UL_SNR <= s.ul_snr_p10 THEN 1 ELSE 0 END AS snr_low_flag,\\n    CASE WHEN m.PRB_Utilization_UL >= s.prb_util_ul_p90 THEN 1 ELSE 0 END AS prb_high_flag,\\n    CASE WHEN m.Estimated_UL_Buffer >= s.buffer_p90 THEN 1 ELSE 0 END AS buffer_high_flag,\\n    CASE WHEN m.UL_MCS <= s.ul_mcs_p10 THEN 1 ELSE 0 END AS mcs_low_flag\\n  FROM m\\n  CROSS JOIN stats AS s\\n), agg AS (\\n  SELECT\\n    degraded_flag,\\n    AVG(UL_BLER) AS avg_ul_bler,\\n    AVG(UL_SNR) AS avg_ul_snr,\\n    STDDEV_SAMP(UL_SNR) AS std_ul_snr,\\n    AVG(UL_MCS) AS avg_ul_mcs,\\n    STDDEV_SAMP(UL_MCS) AS std_ul_mcs,\\n    AVG(PRB_Utilization_UL) AS avg_prb_util_ul,\\n    AVG(Estimated_UL_Buffer) AS avg_est_ul_buffer,\\n    MAX(Estimated_UL_Buffer) AS max_est_ul_buffer\\n  FROM labeled\\n  GROUP BY\\n    degraded_flag\\n), onset AS (\\n  SELECT\\n    MIN(event_timestamp) FILTER(WHERE\\n      degraded_flag = 1) AS first_degraded_time\\n  FROM labeled\\n), order_check AS (\\n  SELECT\\n    o.first_degraded_time,\\n    MIN(l.event_timestamp) FILTER(WHERE\\n      l.snr_low_flag = 1 AND l.event_timestamp >= o.first_degraded_time) AS first_snr_low_after_degraded,\\n    MIN(l.event_timestamp) FILTER(WHERE\\n      l.prb_high_flag = 1 AND l.event_timestamp >= o.first_degraded_time) AS first_prb_high_after_degraded,\\n    MIN(l.event_timestamp) FILTER(WHERE\\n      l.buffer_high_flag = 1 AND l.event_timestamp >= o.first_degraded_time) AS first_buffer_high_after_degraded,\\n    MIN(l.event_timestamp) FILTER(WHERE\\n      l.mcs_low_flag = 1 AND l.event_timestamp >= o.first_degraded_time) AS first_mcs_low_after_degraded\\n  FROM onset AS o\\n  JOIN labeled AS l\\n    ON 1 = 1\\n  GROUP BY\\n    o.first_degraded_time\\n), agg_summary AS (\\n  SELECT\\n    MAX(CASE WHEN degraded_flag = 1 THEN avg_ul_bler END) AS avg_ul_bler_degraded,\\n    MAX(CASE WHEN degraded_flag = 0 THEN avg_ul_bler END) AS avg_ul_bler_recovered,\\n    MAX(CASE WHEN degraded_flag = 1 THEN avg_ul_snr END) AS avg_ul_snr_degraded,\\n    MAX(CASE WHEN degraded_flag = 0 THEN avg_ul_snr END) AS avg_ul_snr_recovered,\\n    MAX(CASE WHEN degraded_flag = 1 THEN avg_ul_mcs END) AS avg_ul_mcs_degraded,\\n    MAX(CASE WHEN degraded_flag = 0 THEN avg_ul_mcs END) AS avg_ul_mcs_recovered,\\n    MAX(CASE WHEN degraded_flag = 1 THEN avg_prb_util_ul END) AS avg_prb_util_ul_degraded,\\n    MAX(CASE WHEN degraded_flag = 0 THEN avg_prb_util_ul END) AS avg_prb_util_ul_recovered,\\n    MAX(CASE WHEN degraded_flag = 1 THEN avg_est_ul_buffer END) AS avg_est_ul_buffer_degraded,\\n    MAX(CASE WHEN degraded_flag = 0 THEN avg_est_ul_buffer END) AS avg_est_ul_buffer_recovered,\\n    MAX(CASE WHEN degraded_flag = 1 THEN max_est_ul_buffer END) AS max_est_ul_buffer_degraded\\n  FROM agg\\n)\\nSELECT\\n  s.ul_bler_p90,\\n  s.ul_snr_p10,\\n  s.prb_util_ul_p90,\\n  s.buffer_p90,\\n  s.ul_mcs_p10,\\n  a.avg_ul_bler_degraded,\\n  a.avg_ul_bler_recovered,\\n  a.avg_ul_snr_degraded,\\n  a.avg_ul_snr_recovered,\\n  a.avg_ul_mcs_degraded,\\n  a.avg_ul_mcs_recovered,\\n  a.avg_prb_util_ul_degraded,\\n  a.avg_prb_util_ul_recovered,\\n  a.avg_est_ul_buffer_degraded,\\n  a.avg_est_ul_buffer_recovered,\\n  a.max_est_ul_buffer_degraded,\\n  o.first_degraded_time,\\n  o.first_snr_low_after_degraded,\\n  o.first_prb_high_after_degraded,\\n  o.first_buffer_high_after_degraded,\\n  o.first_mcs_low_after_degraded,\\n  CASE\\n    WHEN o.first_snr_low_after_degraded IS NULL\\n    AND o.first_prb_high_after_degraded IS NULL\\n    AND o.first_buffer_high_after_degraded IS NULL\\n    AND o.first_mcs_low_after_degraded IS NULL\\n    THEN NULL\\n    WHEN COALESCE(o.first_snr_low_after_degraded, CAST('9999-12-31' AS TIMESTAMP)) <= COALESCE(o.first_prb_high_after_degraded, CAST('9999-12-31' AS TIMESTAMP))\\n    AND COALESCE(o.first_snr_low_after_degraded, CAST('9999-12-31' AS TIMESTAMP)) <= COALESCE(o.first_buffer_high_after_degraded, CAST('9999-12-31' AS TIMESTAMP))\\n    AND COALESCE(o.first_snr_low_after_degraded, CAST('9999-12-31' AS TIMESTAMP)) <= COALESCE(o.first_mcs_low_after_degraded, CAST('9999-12-31' AS TIMESTAMP))\\n    THEN 'UL_SNR_low (radio reliability)'\\n    WHEN COALESCE(o.first_prb_high_after_degraded, CAST('9999-12-31' AS TIMESTAMP)) <= COALESCE(o.first_buffer_high_after_degraded, CAST('9999-12-31' AS TIMESTAMP))\\n    AND COALESCE(o.first_prb_high_after_degraded, CAST('9999-12-31' AS TIMESTAMP)) <= COALESCE(o.first_mcs_low_after_degraded, CAST('9999-12-31' AS TIMESTAMP))\\n    THEN 'UL_PRB_Util_high (congestion/buffering)'\\n    WHEN COALESCE(o.first_buffer_high_after_degraded, CAST('9999-12-31' AS TIMESTAMP)) <= COALESCE(o.first_mcs_low_after_degraded, CAST('9999-12-31' AS TIMESTAMP))\\n    THEN 'Estimated_UL_Buffer_high (congestion/buffering)'\\n    ELSE 'UL_MCS_low (radio reliability)'\\n  END AS first_metric_cross_after_degraded /* which threshold-crossing happened first after degradation onset */\\nFROM stats AS s\\nCROSS JOIN agg_summary AS a\\nCROSS JOIN order_check AS o\", \"result\": {\"columns\": [\"ul_bler_p90\", \"ul_snr_p10\", \"prb_util_ul_p90\", \"buffer_p90\", \"ul_mcs_p10\", \"avg_ul_bler_degraded\", \"avg_ul_bler_recovered\", \"avg_ul_snr_degraded\", \"avg_ul_snr_recovered\", \"avg_ul_mcs_degraded\", \"avg_ul_mcs_recovered\", \"avg_prb_util_ul_degraded\", \"avg_prb_util_ul_recovered\", \"avg_est_ul_buffer_degraded\", \"avg_est_ul_buffer_recovered\", \"max_est_ul_buffer_degraded\", \"first_degraded_time\", \"first_snr_low_after_degraded\", \"first_prb_high_after_degraded\", \"first_buffer_high_after_degraded\", \"first_mcs_low_after_degraded\", \"first_metric_cross_after_degraded\"], \"rows\": [{\"ul_bler_p90\": 0.1599704099999999, \"ul_snr_p10\": 18.9325, \"prb_util_ul_p90\": 2.87268, \"buffer_p90\": 4083.905, \"ul_mcs_p10\": 11.578, \"avg_ul_bler_degraded\": 0.1738712153846153, \"avg_ul_bler_recovered\": 0.09075972956521737, \"avg_ul_snr_degraded\": 22.34423076923077, \"avg_ul_snr_recovered\": 20.278869565217402, \"avg_ul_mcs_degraded\": 13.496153846153847, \"avg_ul_mcs_recovered\": 16.332086956521742, \"avg_prb_util_ul_degraded\": 1.2388692307692308, \"avg_prb_util_ul_recovered\": 1.7584686956521747, \"avg_est_ul_buffer_degraded\": 3623.7807692307697, \"avg_est_ul_buffer_recovered\": 3832.887652173911, \"max_est_ul_buffer_degraded\": 3942.02, \"first_degraded_time\": \"2025-01-01 00:05:44.500000\", \"first_snr_low_after_degraded\": \"2025-01-01 00:05:46\", \"first_prb_high_after_degraded\": \"2025-01-01 00:05:45.700000\", \"first_buffer_high_after_degraded\": \"2025-01-01 00:05:45.100000\", \"first_mcs_low_after_degraded\": \"2025-01-01 00:05:44.800000\", \"first_metric_cross_after_degraded\": \"UL_MCS_low (radio reliability)\"}], \"row_count\": 1, \"truncated_at\": null}}"
+          },
+          {
+            "tool": "telemetry_sql",
+            "args": {
+              "purpose": "Quantify whether UL_BLER during WIN-000037 aligns more with radio reliability indicators (UL_SNR/UL_MCS) or with congestion/buffering indicators (PRB_Utilization_UL/Estimated_UL_Buffer) by computing correlations in degraded vs recovery portions.",
+              "sql": "WITH m AS (\n  SELECT event_timestamp, UL_BLER, UL_SNR, UL_MCS, PRB_Utilization_UL, Estimated_UL_Buffer\n  FROM telemetry_measurements\n  WHERE window_id='WIN-000037'\n), stats AS (\n  SELECT\n    QUANTILE_CONT(UL_BLER, 0.90 ORDER BY UL_BLER) AS ul_bler_p90\n  FROM m\n), labeled AS (\n  SELECT\n    m.*, s.ul_bler_p90,\n    CASE WHEN m.UL_BLER >= s.ul_bler_p90 THEN 1 ELSE 0 END AS degraded_flag\n  FROM m CROSS JOIN stats s\n)\nSELECT\n  degraded_flag,\n  COUNT(*) AS n_samples,\n  CORR(UL_BLER, UL_SNR) AS corr_ul_bler_ul_snr,\n  CORR(UL_BLER, UL_MCS) AS corr_ul_bler_ul_mcs,\n  CORR(UL_BLER, PRB_Utilization_UL) AS corr_ul_bler_prb_util_ul,\n  CORR(UL_BLER, Estimated_UL_Buffer) AS corr_ul_bler_est_ul_buffer\nFROM labeled\nGROUP BY degraded_flag\nORDER BY degraded_flag DESC;",
+              "window_ids": [
+                "WIN-000037"
+              ]
+            },
+            "result": "{\"status\": \"completed\", \"repair_used\": false, \"sql\": \"WITH m AS (\\n  SELECT\\n    event_timestamp,\\n    UL_BLER,\\n    UL_SNR,\\n    UL_MCS,\\n    PRB_Utilization_UL,\\n    Estimated_UL_Buffer\\n  FROM telemetry_measurements\\n  WHERE\\n    window_id = 'WIN-000037'\\n), stats AS (\\n  SELECT\\n    QUANTILE_CONT(UL_BLER, 0.90 ORDER BY UL_BLER) AS ul_bler_p90\\n  FROM m\\n), labeled AS (\\n  SELECT\\n    m.*,\\n    s.ul_bler_p90,\\n    CASE WHEN m.UL_BLER >= s.ul_bler_p90 THEN 1 ELSE 0 END AS degraded_flag\\n  FROM m\\n  CROSS JOIN stats AS s\\n)\\nSELECT\\n  degraded_flag,\\n  COUNT(*) AS n_samples,\\n  CORR(UL_BLER, UL_SNR) AS corr_ul_bler_ul_snr,\\n  CORR(UL_BLER, UL_MCS) AS corr_ul_bler_ul_mcs,\\n  CORR(UL_BLER, PRB_Utilization_UL) AS corr_ul_bler_prb_util_ul,\\n  CORR(UL_BLER, Estimated_UL_Buffer) AS corr_ul_bler_est_ul_buffer\\nFROM labeled\\nGROUP BY\\n  degraded_flag\\nORDER BY\\n  degraded_flag DESC\", \"result\": {\"columns\": [\"degraded_flag\", \"n_samples\", \"corr_ul_bler_ul_snr\", \"corr_ul_bler_ul_mcs\", \"corr_ul_bler_prb_util_ul\", \"corr_ul_bler_est_ul_buffer\"], \"rows\": [{\"degraded_flag\": 1, \"n_samples\": 13, \"corr_ul_bler_ul_snr\": 0.0046045435790841305, \"corr_ul_bler_ul_mcs\": -0.39970746493427767, \"corr_ul_bler_prb_util_ul\": -0.18117571973064342, \"corr_ul_bler_est_ul_buffer\": -0.6826092764772352}, {\"degraded_flag\": 0, \"n_samples\": 115, \"corr_ul_bler_ul_snr\": 0.2921158253972429, \"corr_ul_bler_ul_mcs\": 0.06349447215729387, \"corr_ul_bler_prb_util_ul\": 0.15227549362695428, \"corr_ul_bler_est_ul_buffer\": 0.1871360376629199}], \"row_count\": 2, \"truncated_at\": null}}"
+          },
+          {
+            "tool": "telemetry_sql",
+            "args": {
+              "purpose": "Provide UL_SNR and UL_MCS variability during degraded vs recovered states (radio adaptation evidence).",
+              "sql": "WITH m AS (\n  SELECT event_timestamp, UL_BLER, UL_SNR, UL_MCS, PRB_Utilization_UL, Estimated_UL_Buffer\n  FROM telemetry_measurements\n  WHERE window_id='WIN-000037'\n), stats AS (\n  SELECT QUANTILE_CONT(UL_BLER, 0.90 ORDER BY UL_BLER) AS ul_bler_p90\n  FROM m\n), labeled AS (\n  SELECT m.*, s.ul_bler_p90,\n         CASE WHEN m.UL_BLER >= s.ul_bler_p90 THEN 1 ELSE 0 END AS degraded_flag\n  FROM m CROSS JOIN stats s\n)\nSELECT\n  degraded_flag,\n  AVG(UL_BLER) AS avg_ul_bler,\n  STDDEV_SAMP(UL_SNR) AS std_ul_snr,\n  AVG(UL_SNR) AS avg_ul_snr,\n  STDDEV_SAMP(UL_MCS) AS std_ul_mcs,\n  AVG(UL_MCS) AS avg_ul_mcs\nFROM labeled\nGROUP BY degraded_flag\nORDER BY degraded_flag DESC;",
+              "window_ids": [
+                "WIN-000037"
+              ]
+            },
+            "result": "{\"status\": \"completed\", \"repair_used\": false, \"sql\": \"WITH m AS (\\n  SELECT\\n    event_timestamp,\\n    UL_BLER,\\n    UL_SNR,\\n    UL_MCS,\\n    PRB_Utilization_UL,\\n    Estimated_UL_Buffer\\n  FROM telemetry_measurements\\n  WHERE\\n    window_id = 'WIN-000037'\\n), stats AS (\\n  SELECT\\n    QUANTILE_CONT(UL_BLER, 0.90 ORDER BY UL_BLER) AS ul_bler_p90\\n  FROM m\\n), labeled AS (\\n  SELECT\\n    m.*,\\n    s.ul_bler_p90,\\n    CASE WHEN m.UL_BLER >= s.ul_bler_p90 THEN 1 ELSE 0 END AS degraded_flag\\n  FROM m\\n  CROSS JOIN stats AS s\\n)\\nSELECT\\n  degraded_flag,\\n  AVG(UL_BLER) AS avg_ul_bler,\\n  STDDEV_SAMP(UL_SNR) AS std_ul_snr,\\n  AVG(UL_SNR) AS avg_ul_snr,\\n  STDDEV_SAMP(UL_MCS) AS std_ul_mcs,\\n  AVG(UL_MCS) AS avg_ul_mcs\\nFROM labeled\\nGROUP BY\\n  degraded_flag\\nORDER BY\\n  degraded_flag DESC\", \"result\": {\"columns\": [\"degraded_flag\", \"avg_ul_bler\", \"std_ul_snr\", \"avg_ul_snr\", \"std_ul_mcs\", \"avg_ul_mcs\"], \"rows\": [{\"degraded_flag\": 1, \"avg_ul_bler\": 0.1738712153846153, \"std_ul_snr\": 1.94520547988493, \"avg_ul_snr\": 22.34423076923077, \"std_ul_mcs\": 2.414589469804817, \"avg_ul_mcs\": 13.496153846153847}, {\"degraded_flag\": 0, \"avg_ul_bler\": 0.09075972956521737, \"std_ul_snr\": 1.705744687512723, \"avg_ul_snr\": 20.278869565217402, \"std_ul_mcs\": 2.0070133591860273, \"avg_ul_mcs\": 16.332086956521742}], \"row_count\": 2, \"truncated_at\": null}}"
+          }
+        ]
+      }
+    },
+    {
+      "timestamp": "2026-08-28T02:12:03.144433+05:30",
+      "stage": "blackboard_update",
+      "input": {
+        "confirmed": [
+          {
+            "fact_id": "t1",
+            "domain": "telemetry",
+            "statement": "For WIN-000037, UL_BLER is higher in degraded sub-intervals than recovered (~0.174 vs ~0.091 using UL_BLER\u226590th percentile).",
+            "confidence": "HIGH",
+            "source_type": "existing"
+          },
+          {
+            "fact_id": "t2",
+            "domain": "telemetry",
+            "statement": "In degraded sub-intervals, UL_MCS is lower and more variable than in recovered (~13.50 vs ~16.33), with BLER anti-correlated with UL_MCS during degraded samples.",
+            "confidence": "HIGH",
+            "source_type": "existing"
+          },
+          {
+            "fact_id": "t3",
+            "domain": "telemetry",
+            "statement": "Congestion/buffering is not elevated during degraded: mean UL PRB utilization and Estimated_UL_Buffer are lower in degraded (~1.24 and ~3624) than recovered (~1.76 and ~3833), and BLER is anti-correlated with Estimated_UL_Buffer within degraded intervals.",
+            "confidence": "HIGH",
+            "source_type": "existing"
+          },
+          {
+            "fact_id": "t4",
+            "domain": "telemetry",
+            "statement": "Timing: after the first BLER-tagged degraded time (~00:05:44.500), UL_MCS low appears first (~00:05:44.800); subsequent threshold excursions occur for Estimated_UL_Buffer (~00:05:45.100), UL PRB utilization (~00:05:45.700), and UL_SNR low (~00:05:46.000).",
+            "confidence": "MEDIUM",
+            "source_type": "existing"
+          }
+        ],
+        "verdicts": [
+          {
+            "hypothesis_id": "a",
+            "domain": "telemetry",
+            "hypothesis": "Primary mechanism is uplink radio reliability/signal-quality degradation (BLER rise with SNR/instability and/or retransmission signatures; link adaptation via MCS fall/variability).",
+            "status": "supported",
+            "reason": "Strong discriminators align: UL_BLER increases while UL_MCS decreases and becomes more variable, including BLER\u2013MCS anti-correlation during degraded intervals; MCS drops occur earliest after degradation onset.",
+            "confidence": "HIGH"
+          },
+          {
+            "hypothesis_id": "b",
+            "domain": "telemetry",
+            "hypothesis": "Primary mechanism is uplink resource congestion/buffering (PRB/queue/buffer and scheduler/latency increase driving degradation).",
+            "status": "contradicted",
+            "reason": "During degraded intervals, PRB utilization and Estimated_UL_Buffer are lower on average than recovered, and BLER is anti-correlated with Estimated_UL_Buffer; any PRB/buffer threshold crossings appear transient after MCS changes rather than as sustained congestion buildup.",
+            "confidence": "HIGH"
+          },
+          {
+            "hypothesis_id": "c",
+            "domain": "telemetry",
+            "hypothesis": "Radio impairment and congestion interact, with congestion/buffering acting as a secondary/transient effect rather than the root driver.",
+            "status": "inconclusive",
+            "reason": "Evidence shows short transient threshold excursions after MCS/BLER changes, but lack of scheduler-delay/queue semantics and mismatch in degraded averages prevents confirming congestion as a meaningful secondary contributor.",
+            "confidence": "LOW"
+          }
+        ],
+        "open_questions": [
+          {
+            "question_id": "q1",
+            "domain": "telemetry",
+            "question": "Do retransmission-related indicators (HARQ/RLC retransmissions, etc.) rise during the degraded sub-intervals in WIN-000037 to directly validate radio reliability impairment as the driver?",
+            "required_evidence": "Time-aligned HARQ/RLC retransmission counts/rates and/or similar link-failure indicators for the degraded vs recovered windows."
+          },
+          {
+            "question_id": "q2",
+            "domain": "telemetry",
+            "question": "Does the \u201cEstimated_UL_Buffer\u201d metric correspond to true queue backlog (and scheduler delay/latency increases), or is it a different construct such that buffer anti-correlation with BLER could reflect something other than congestion?",
+            "required_evidence": "Telemetry clarifying buffer semantics plus scheduler latency/queue depth/backlog metrics aligned with the same degraded/recovered tagging."
+          }
+        ],
+        "evidence_gaps": [
+          {
+            "domain": "telemetry",
+            "missing_evidence": "HARQ/RLC retransmission or other radio reliability failure counters for WIN-000037 during degraded vs recovered intervals.",
+            "reason": "Not present in the synthesis; without these, the radio mechanism is inferred from BLER/MCS patterns rather than directly validated by retransmission behavior."
+          },
+          {
+            "domain": "telemetry",
+            "missing_evidence": "Scheduler latency/queue backlog/backpressure KPIs and additional radio quality metrics (e.g., CQI/RSRQ/eSINR) time-aligned to degraded/recovered windows.",
+            "reason": "Buffer/PRB indicators alone do not establish congestion semantics, and limited radio quality dimensions (only SNR mentioned; RSRP referenced) restrict diagnosing the physical cause of BLER increase (interference/multipath vs pure adaptation)."
+          }
+        ],
+        "summary": "For WIN-000037, the most discriminating telemetry supports a primary uplink radio reliability/link-adaptation impairment (UL_BLER\u2191 with UL_MCS\u2193 and higher variability; BLER anti-correlated with MCS), with UL_MCS dropping earliest after degradation onset. Congestion/buffering is contradicted by lower PRB utilization and Estimated_UL_Buffer during degraded periods (and BLER anti-correlation with buffer), though transient threshold crossings occur shortly after MCS/BLE degradation begins."
+      },
+      "output": {
+        "confirmed_fact_count": 4,
+        "verdict_count": 3,
+        "open_question_count": 2,
+        "evidence_gap_count": 2,
+        "rounds_used": 1
+      }
+    },
+    {
+      "timestamp": "2026-08-28T02:12:06.322184+05:30",
+      "stage": "rca",
+      "input": {
+        "round": 1,
+        "compact_state": {
+          "confirmed_fact_count": 4,
+          "verdict_count": 3,
+          "open_question_count": 2,
+          "evidence_gap_count": 2
+        }
+      },
+      "output": {
+        "action": "request_more",
+        "request": {
+          "request_id": "INC-COMPLEX-001-r2-telemetry-harq",
+          "domain": "telemetry",
+          "question": "For WIN-000037, do retransmission-related indicators (HARQ and/or RLC retransmission counts/rates, or similar radio link-failure counters) increase during the BLER-tagged degraded sub-intervals compared to the recovered sub-intervals (time-aligned)?",
+          "evidence_goal": "Directly validate uplink radio reliability impairment as the driver by showing higher retransmission/link-failure activity during degraded intervals relative to recovered ones."
+        },
+        "confidence": "HIGH",
+        "reasoning_summary": "Current telemetry already shows a strong discriminating pattern consistent with radio reliability impairment (higher UL_BLER, lower/more variable UL_MCS, BLER\u2013MCS anti-correlation, and MCS drops occurring earliest). However, the key missing discriminator is direct retransmission/link-failure evidence (HARQ/RLC). Requesting this telemetry will either confirm the radio reliability mechanism or reveal that BLER/MCS changes are due to a different cause (e.g., measurement/adaptation effects) rather than repeated transmission failures."
+      }
+    },
+    {
+      "timestamp": "2026-08-28T02:12:36.549570+05:30",
+      "stage": "telemetry_specialist",
+      "input": {
+        "task": {
+          "request_id": "INC-COMPLEX-001-r2-telemetry-harq",
+          "domain": "telemetry",
+          "question": "For WIN-000037, do retransmission-related indicators (HARQ and/or RLC retransmission counts/rates, or similar radio link-failure counters) increase during the BLER-tagged degraded sub-intervals compared to the recovered sub-intervals (time-aligned)?",
+          "evidence_goal": "Directly validate uplink radio reliability impairment as the driver by showing higher retransmission/link-failure activity during degraded intervals relative to recovered ones."
+        }
+      },
+      "output": {
+        "domain_update": {
+          "confirmed": [
+            {
+              "fact_id": "t1",
+              "domain": "telemetry",
+              "statement": "For WIN-000037, UL_BLER is higher in BLER-tagged degraded sub-intervals than recovered (~0.174 vs ~0.091).",
+              "confidence": "HIGH",
+              "source_type": "existing",
+              "source_ref": null
+            },
+            {
+              "fact_id": "t2",
+              "domain": "telemetry",
+              "statement": "During degraded sub-intervals, UL_MCS is lower/more variable than recovered (~13.50 vs ~16.33), with BLER anti-correlated with UL_MCS.",
+              "confidence": "HIGH",
+              "source_type": "existing",
+              "source_ref": null
+            },
+            {
+              "fact_id": "t3",
+              "domain": "telemetry",
+              "statement": "Congestion/buffering indicators are lower in degraded vs recovered: UL PRB utilization and Estimated_UL_Buffer are both lower (~1.24 & ~3624 vs ~1.76 & ~3833), with BLER anti-correlated with Estimated_UL_Buffer in degraded.",
+              "confidence": "HIGH",
+              "source_type": "existing",
+              "source_ref": null
+            },
+            {
+              "fact_id": "t4",
+              "domain": "telemetry",
+              "statement": "Timing suggests reliability/adaptation changes start shortly after the first BLER-tagged degraded time (~00:05:44.5), with later excursions for Estimated_UL_Buffer, UL PRB utilization, and UL_SNR low.",
+              "confidence": "MEDIUM",
+              "source_type": "existing",
+              "source_ref": null
+            }
+          ],
+          "verdicts": [
+            {
+              "hypothesis_id": "hyp_a",
+              "domain": "telemetry",
+              "hypothesis": "Uplink radio reliability impairment (degraded signal/link quality) is the driver.",
+              "status": "supported",
+              "reason": "Degraded intervals show higher UL_BLER and lower/less-stable UL_MCS with BLER anti-correlated to MCS, consistent with radio reliability degradation.",
+              "confidence": "HIGH"
+            },
+            {
+              "hypothesis_id": "hyp_b",
+              "domain": "telemetry",
+              "hypothesis": "Uplink resource congestion/buffering is the primary driver of degraded BLER behavior.",
+              "status": "contradicted",
+              "reason": "Degraded intervals have lower UL PRB utilization and lower Estimated_UL_Buffer than recovered; BLER is anti-correlated with Estimated_UL_Buffer in degraded rather than aligned with congestion elevation.",
+              "confidence": "HIGH"
+            },
+            {
+              "hypothesis_id": "hyp_c",
+              "domain": "telemetry",
+              "hypothesis": "A meaningful secondary mechanism is an interaction of reliability degradation with congestion/backlog effects.",
+              "status": "inconclusive",
+              "reason": "Short-lived threshold excursions exist, but the available telemetry does not provide scheduler/backlog semantics needed to confirm congestion/backlog as a secondary retransmission/reliability driver.",
+              "confidence": "MEDIUM"
+            }
+          ],
+          "open_questions": [
+            {
+              "question_id": "oq_retx",
+              "domain": "telemetry",
+              "question": "For WIN-000037, do HARQ and/or RLC retransmission counts/rates (or radio link-failure counters) increase during BLER-tagged degraded sub-intervals compared to recovered ones, time-aligned?",
+              "required_evidence": "Direct HARQ retransmission metrics and/or RLC retransmission/link-failure counters for the same window/scope as UL_BLER tagging, including degraded vs recovered sub-interval time alignment."
+            },
+            {
+              "question_id": "oq_scheduler_semantics",
+              "domain": "telemetry",
+              "question": "Do Estimated_UL_Buffer and related telemetry map to queue depth/backlog age and scheduler latency for WIN-000037, enabling congestion-to-reliability (retransmission) interpretation?",
+              "required_evidence": "Scheduler/backlog-related counters (e.g., queue depth/age, scheduler latency/HOL blocking, retransmission/ARQ linkage) or a data dictionary tying Estimated_UL_Buffer to retransmission-relevant semantics."
+            }
+          ],
+          "evidence_gaps": [
+            {
+              "domain": "telemetry",
+              "missing_evidence": "HARQ retransmission metrics and/or RLC retransmission counts/rates (or radio link-failure counters) for WIN-000037, time-aligned to BLER-tagged degraded vs recovered sub-intervals.",
+              "reason": "The provided telemetry schema lacks explicit HARQ/RLC retransmission/link-failure counter columns for this window."
+            },
+            {
+              "domain": "telemetry",
+              "missing_evidence": "Scheduler/backlog semantics needed to interpret congestion indicators (e.g., backlog depth/age, scheduler latency, HOL blocking, mapping from buffer estimates to retransmission/ARQ behavior).",
+              "reason": "Estimated_UL_Buffer/PRB utilization alone does not establish congestion as a retransmission-relevant secondary mechanism without backlog-to-scheduler metrics."
+            }
+          ],
+          "summary": "Telemetric evidence supports radio reliability degradation as the main driver (higher UL_BLER, lower/more variable MCS, BLER\u2013MCS anti-correlation) while congestion/buffering appears not elevated. Direct validation of retransmission-related indicators (HARQ/RLC/reliability failure counters) is not possible with the available telemetry schema; thus the retransmission-increase-by-degraded claim is currently not distinguishable from missing evidence."
+        },
+        "tool_trace": [
+          {
+            "tool": "telemetry_schema",
+            "args": {},
+            "result": "telemetry_measurements(window_id VARCHAR, sample_index BIGINT, event_timestamp TIMESTAMP, RSRP DOUBLE, DL_BLER DOUBLE, DL_MCS DOUBLE, UL_BLER DOUBLE, UL_MCS DOUBLE, UL_NPRB DOUBLE, UL_SNR DOUBLE, TX_Bytes DOUBLE, RX_Bytes DOUBLE, Estimated_UL_Buffer DOUBLE, PRBs_DL_Current DOUBLE, PRBs_UL_Current DOUBLE, PRB_Utilization_DL DOUBLE, PRB_Utilization_UL DOUBLE, UL_Protocol VARCHAR, UL_NumberOfPackets DOUBLE, DL_Protocol VARCHAR, DL_NumberOfPackets DOUBLE)\ntelemetry_summary(window_id VARCHAR, start_time TIMESTAMP, end_time TIMESTAMP, sample_count BIGINT, avg_rsrp DOUBLE, min_rsrp DOUBLE, max_rsrp DOUBLE, avg_dl_bler DOUBLE, max_dl_bler DOUBLE, avg_ul_bler DOUBLE, max_ul_bler DOUBLE, avg_ul_snr DOUBLE, min_ul_snr DOUBLE, avg_dl_mcs DOUBLE, avg_ul_mcs DOUBLE, avg_prb_utilization_dl DOUBLE, avg_prb_utilization_ul DOUBLE, avg_tx_bytes DOUBLE, avg_rx_bytes DOUBLE)\ntelemetry_windows(window_id VARCHAR, start_time TIMESTAMP, end_time TIMESTAMP, sampling_rate BIGINT, zone VARCHAR, application VARCHAR, mobility VARCHAR, congestion VARCHAR, anomaly_present VARCHAR)"
+          },
+          {
+            "tool": "telemetry_sql",
+            "args": {
+              "purpose": "Check for indirect retransmission/link-failure proxies during UL_BLER high (degraded) vs lower (recovered) sub-intervals in WIN-000037 by comparing TX_Bytes and UL_NumberOfPackets (and related radio KPIs) between the two time-aligned groups.",
+              "sql": "WITH base AS (\n  SELECT\n    *,\n    quantile_cont(UL_BLER, 0.9) OVER () AS ul_bler_p90\n  FROM telemetry_measurements\n  WHERE window_id = 'WIN-000037'\n), tagged AS (\n  SELECT\n    CASE WHEN UL_BLER >= ul_bler_p90 THEN 'degraded' ELSE 'recovered' END AS state,\n    *\n  FROM base\n)\nSELECT\n  state,\n  COUNT(*) AS sample_count,\n  AVG(UL_BLER) AS avg_ul_bler,\n  AVG(UL_MCS) AS avg_ul_mcs,\n  AVG(UL_SNR) AS avg_ul_snr,\n  AVG(Estimated_UL_Buffer) AS avg_est_ul_buffer,\n  AVG(PRB_Utilization_UL) AS avg_prb_util_ul,\n  AVG(TX_Bytes) AS avg_tx_bytes,\n  AVG(UL_NumberOfPackets) AS avg_ul_num_packets,\n  SUM(TX_Bytes) AS sum_tx_bytes,\n  SUM(UL_NumberOfPackets) AS sum_ul_num_packets\nFROM tagged\nGROUP BY state\nORDER BY state;",
+              "window_ids": [
+                "WIN-000037"
+              ]
+            },
+            "result": "{\"status\": \"completed\", \"repair_used\": false, \"sql\": \"WITH base AS (\\n  SELECT\\n    *,\\n    QUANTILE_CONT(UL_BLER, 0.9) OVER () AS ul_bler_p90\\n  FROM telemetry_measurements\\n  WHERE\\n    window_id = 'WIN-000037'\\n), tagged AS (\\n  SELECT\\n    CASE WHEN UL_BLER >= ul_bler_p90 THEN 'degraded' ELSE 'recovered' END AS state,\\n    *\\n  FROM base\\n)\\nSELECT\\n  state,\\n  COUNT(*) AS sample_count,\\n  AVG(UL_BLER) AS avg_ul_bler,\\n  AVG(UL_MCS) AS avg_ul_mcs,\\n  AVG(UL_SNR) AS avg_ul_snr,\\n  AVG(Estimated_UL_Buffer) AS avg_est_ul_buffer,\\n  AVG(PRB_Utilization_UL) AS avg_prb_util_ul,\\n  AVG(TX_Bytes) AS avg_tx_bytes,\\n  AVG(UL_NumberOfPackets) AS avg_ul_num_packets,\\n  SUM(TX_Bytes) AS sum_tx_bytes,\\n  SUM(UL_NumberOfPackets) AS sum_ul_num_packets\\nFROM tagged\\nGROUP BY\\n  state\\nORDER BY\\n  state\", \"result\": {\"columns\": [\"state\", \"sample_count\", \"avg_ul_bler\", \"avg_ul_mcs\", \"avg_ul_snr\", \"avg_est_ul_buffer\", \"avg_prb_util_ul\", \"avg_tx_bytes\", \"avg_ul_num_packets\", \"sum_tx_bytes\", \"sum_ul_num_packets\"], \"rows\": [{\"state\": \"degraded\", \"sample_count\": 13, \"avg_ul_bler\": 0.1738712153846153, \"avg_ul_mcs\": 13.496153846153847, \"avg_ul_snr\": 22.34423076923077, \"avg_est_ul_buffer\": 3623.7807692307697, \"avg_prb_util_ul\": 1.2388692307692308, \"avg_tx_bytes\": 418364.0, \"avg_ul_num_packets\": 79.53846153846153, \"sum_tx_bytes\": 5438732.0, \"sum_ul_num_packets\": 1034.0}, {\"state\": \"recovered\", \"sample_count\": 115, \"avg_ul_bler\": 0.09075972956521737, \"avg_ul_mcs\": 16.332086956521742, \"avg_ul_snr\": 20.278869565217402, \"avg_est_ul_buffer\": 3832.887652173911, \"avg_prb_util_ul\": 1.7584686956521747, \"avg_tx_bytes\": 437809.8, \"avg_ul_num_packets\": 74.88695652173914, \"sum_tx_bytes\": 50348127.0, \"sum_ul_num_packets\": 8612.0}], \"row_count\": 2, \"truncated_at\": null}}"
+          },
+          {
+            "tool": "telemetry_sql",
+            "args": {
+              "purpose": "Compare RX_Bytes and UL/N packets as additional indirect indicators during high-UL_BLER (degraded) vs recovered sub-intervals in WIN-000037.",
+              "sql": "WITH base AS (\n  SELECT\n    *,\n    quantile_cont(UL_BLER, 0.9) OVER () AS ul_bler_p90\n  FROM telemetry_measurements\n  WHERE window_id = 'WIN-000037'\n), tagged AS (\n  SELECT\n    CASE WHEN UL_BLER >= ul_bler_p90 THEN 'degraded' ELSE 'recovered' END AS state,\n    *\n  FROM base\n)\nSELECT\n  state,\n  COUNT(*) AS sample_count,\n  AVG(UL_BLER) AS avg_ul_bler,\n  AVG(TX_Bytes) AS avg_tx_bytes,\n  AVG(RX_Bytes) AS avg_rx_bytes,\n  AVG(UL_NumberOfPackets) AS avg_ul_num_packets,\n  AVG(DL_NumberOfPackets) AS avg_dl_num_packets\nFROM tagged\nGROUP BY state\nORDER BY state;",
+              "window_ids": [
+                "WIN-000037"
+              ]
+            },
+            "result": "{\"status\": \"completed\", \"repair_used\": false, \"sql\": \"WITH base AS (\\n  SELECT\\n    *,\\n    QUANTILE_CONT(UL_BLER, 0.9) OVER () AS ul_bler_p90\\n  FROM telemetry_measurements\\n  WHERE\\n    window_id = 'WIN-000037'\\n), tagged AS (\\n  SELECT\\n    CASE WHEN UL_BLER >= ul_bler_p90 THEN 'degraded' ELSE 'recovered' END AS state,\\n    *\\n  FROM base\\n)\\nSELECT\\n  state,\\n  COUNT(*) AS sample_count,\\n  AVG(UL_BLER) AS avg_ul_bler,\\n  AVG(TX_Bytes) AS avg_tx_bytes,\\n  AVG(RX_Bytes) AS avg_rx_bytes,\\n  AVG(UL_NumberOfPackets) AS avg_ul_num_packets,\\n  AVG(DL_NumberOfPackets) AS avg_dl_num_packets\\nFROM tagged\\nGROUP BY\\n  state\\nORDER BY\\n  state\", \"result\": {\"columns\": [\"state\", \"sample_count\", \"avg_ul_bler\", \"avg_tx_bytes\", \"avg_rx_bytes\", \"avg_ul_num_packets\", \"avg_dl_num_packets\"], \"rows\": [{\"state\": \"degraded\", \"sample_count\": 13, \"avg_ul_bler\": 0.1738712153846153, \"avg_tx_bytes\": 418364.0, \"avg_rx_bytes\": 5450.153846153846, \"avg_ul_num_packets\": 79.53846153846153, \"avg_dl_num_packets\": 279.15384615384613}, {\"state\": \"recovered\", \"sample_count\": 115, \"avg_ul_bler\": 0.09075972956521737, \"avg_tx_bytes\": 437809.8, \"avg_rx_bytes\": 6532.895652173913, \"avg_ul_num_packets\": 74.88695652173914, \"avg_dl_num_packets\": 275.7130434782609}], \"row_count\": 2, \"truncated_at\": null}}"
+          }
+        ]
+      }
+    },
+    {
+      "timestamp": "2026-08-28T02:12:36.551234+05:30",
+      "stage": "blackboard_update",
+      "input": {
+        "confirmed": [
+          {
+            "fact_id": "t1",
+            "domain": "telemetry",
+            "statement": "For WIN-000037, UL_BLER is higher in BLER-tagged degraded sub-intervals than recovered (~0.174 vs ~0.091).",
+            "confidence": "HIGH",
+            "source_type": "existing"
+          },
+          {
+            "fact_id": "t2",
+            "domain": "telemetry",
+            "statement": "During degraded sub-intervals, UL_MCS is lower/more variable than recovered (~13.50 vs ~16.33), with BLER anti-correlated with UL_MCS.",
+            "confidence": "HIGH",
+            "source_type": "existing"
+          },
+          {
+            "fact_id": "t3",
+            "domain": "telemetry",
+            "statement": "Congestion/buffering indicators are lower in degraded vs recovered: UL PRB utilization and Estimated_UL_Buffer are both lower (~1.24 & ~3624 vs ~1.76 & ~3833), with BLER anti-correlated with Estimated_UL_Buffer in degraded.",
+            "confidence": "HIGH",
+            "source_type": "existing"
+          },
+          {
+            "fact_id": "t4",
+            "domain": "telemetry",
+            "statement": "Timing suggests reliability/adaptation changes start shortly after the first BLER-tagged degraded time (~00:05:44.5), with later excursions for Estimated_UL_Buffer, UL PRB utilization, and UL_SNR low.",
+            "confidence": "MEDIUM",
+            "source_type": "existing"
+          }
+        ],
+        "verdicts": [
+          {
+            "hypothesis_id": "hyp_a",
+            "domain": "telemetry",
+            "hypothesis": "Uplink radio reliability impairment (degraded signal/link quality) is the driver.",
+            "status": "supported",
+            "reason": "Degraded intervals show higher UL_BLER and lower/less-stable UL_MCS with BLER anti-correlated to MCS, consistent with radio reliability degradation.",
+            "confidence": "HIGH"
+          },
+          {
+            "hypothesis_id": "hyp_b",
+            "domain": "telemetry",
+            "hypothesis": "Uplink resource congestion/buffering is the primary driver of degraded BLER behavior.",
+            "status": "contradicted",
+            "reason": "Degraded intervals have lower UL PRB utilization and lower Estimated_UL_Buffer than recovered; BLER is anti-correlated with Estimated_UL_Buffer in degraded rather than aligned with congestion elevation.",
+            "confidence": "HIGH"
+          },
+          {
+            "hypothesis_id": "hyp_c",
+            "domain": "telemetry",
+            "hypothesis": "A meaningful secondary mechanism is an interaction of reliability degradation with congestion/backlog effects.",
+            "status": "inconclusive",
+            "reason": "Short-lived threshold excursions exist, but the available telemetry does not provide scheduler/backlog semantics needed to confirm congestion/backlog as a secondary retransmission/reliability driver.",
+            "confidence": "MEDIUM"
+          }
+        ],
+        "open_questions": [
+          {
+            "question_id": "oq_retx",
+            "domain": "telemetry",
+            "question": "For WIN-000037, do HARQ and/or RLC retransmission counts/rates (or radio link-failure counters) increase during BLER-tagged degraded sub-intervals compared to recovered ones, time-aligned?",
+            "required_evidence": "Direct HARQ retransmission metrics and/or RLC retransmission/link-failure counters for the same window/scope as UL_BLER tagging, including degraded vs recovered sub-interval time alignment."
+          },
+          {
+            "question_id": "oq_scheduler_semantics",
+            "domain": "telemetry",
+            "question": "Do Estimated_UL_Buffer and related telemetry map to queue depth/backlog age and scheduler latency for WIN-000037, enabling congestion-to-reliability (retransmission) interpretation?",
+            "required_evidence": "Scheduler/backlog-related counters (e.g., queue depth/age, scheduler latency/HOL blocking, retransmission/ARQ linkage) or a data dictionary tying Estimated_UL_Buffer to retransmission-relevant semantics."
+          }
+        ],
+        "evidence_gaps": [
+          {
+            "domain": "telemetry",
+            "missing_evidence": "HARQ retransmission metrics and/or RLC retransmission counts/rates (or radio link-failure counters) for WIN-000037, time-aligned to BLER-tagged degraded vs recovered sub-intervals.",
+            "reason": "The provided telemetry schema lacks explicit HARQ/RLC retransmission/link-failure counter columns for this window."
+          },
+          {
+            "domain": "telemetry",
+            "missing_evidence": "Scheduler/backlog semantics needed to interpret congestion indicators (e.g., backlog depth/age, scheduler latency, HOL blocking, mapping from buffer estimates to retransmission/ARQ behavior).",
+            "reason": "Estimated_UL_Buffer/PRB utilization alone does not establish congestion as a retransmission-relevant secondary mechanism without backlog-to-scheduler metrics."
+          }
+        ],
+        "summary": "Telemetric evidence supports radio reliability degradation as the main driver (higher UL_BLER, lower/more variable MCS, BLER\u2013MCS anti-correlation) while congestion/buffering appears not elevated. Direct validation of retransmission-related indicators (HARQ/RLC/reliability failure counters) is not possible with the available telemetry schema; thus the retransmission-increase-by-degraded claim is currently not distinguishable from missing evidence."
+      },
+      "output": {
+        "confirmed_fact_count": 4,
+        "verdict_count": 6,
+        "open_question_count": 4,
+        "evidence_gap_count": 4,
+        "rounds_used": 2
+      }
+    },
+    {
+      "timestamp": "2026-08-28T02:12:40.722087+05:30",
+      "stage": "rca",
+      "input": {
+        "round": 2,
+        "compact_state": {
+          "confirmed_fact_count": 4,
+          "verdict_count": 6,
+          "open_question_count": 4,
+          "evidence_gap_count": 4
+        }
+      },
+      "output": {
+        "action": "conclude",
+        "conclusion": "WIN-000037 intermittent uplink degradation is most consistent with an uplink radio reliability / signal-quality degradation mechanism (higher UL_BLER with lower and more variable UL_MCS, including BLER\u2013MCS anti-correlation during degraded intervals). Evidence contradicts congestion/buffering as a primary driver because UL PRB utilization and Estimated_UL_Buffer are lower on average in degraded sub-intervals than in recovered ones, with BLER also anti-correlated to Estimated_UL_Buffer within degraded intervals. Buffering/congestion effects may occur transiently, but current telemetry cannot confirm it as a meaningful secondary contributor. Remaining evidence gap: lack of time-aligned HARQ/RLC retransmission or radio link-failure counters to directly validate the reliability impairment via retransmission behavior.",
+        "confidence": "HIGH",
+        "reasoning_summary": "Confirmed telemetry discriminators strongly align with radio reliability degradation (BLER\u2191, UL_MCS\u2193/more variable, BLER anti-correlated with UL_MCS). Concurrent indicators do not align with congestion as primary cause (PRB utilization and Estimated_UL_Buffer are lower during degraded, and BLER is anti-correlated with buffer estimate). Timing suggests MCS low appears before subsequent threshold excursions, further supporting a link-quality/reliability onset rather than backlog-first congestion.",
+        "stop_reason": "sufficient_evidence"
+      }
+    },
+    {
+      "timestamp": "2026-08-28T02:12:40.723639+05:30",
+      "stage": "finish",
+      "input": null,
+      "output": {
+        "incident": {
+          "incident_id": "INC-COMPLEX-001",
+          "problem_statement": "Users report intermittent uplink performance degradation during WIN-000037. Upload performance drops sharply for short periods and then recovers. Monitoring suggests changes in UL_BLER, UL_SNR, UL_MCS stability, uplink PRB utilization, and possible buffer buildup during degraded intervals.",
+          "investigation_goal": "Identify which reported telemetry patterns are most consistent with one or more mechanisms (poor uplink signal quality, uplink radio reliability degradation, uplink resource congestion, buffering/traffic-pressure effects, interaction between mechanisms, or another mechanism) without assuming causation; if not distinguishable, specify evidence gaps.",
+          "symptoms": [
+            "Intermittent uplink performance degradation (not continuous) during WIN-000037",
+            "Upload performance drops sharply for short periods and then recovers",
+            "UL_BLER increases during some degraded periods",
+            "UL_SNR fluctuates",
+            "UL_MCS appears unstable",
+            "Uplink PRB utilization increases during degraded periods",
+            "Buffer buildup may occur during degraded periods"
+          ],
+          "window_ids": [
+            "WIN-000037"
+          ],
+          "component_ids": [],
+          "site_ids": [],
+          "explicit_hypotheses": [
+            "More consistent with poor uplink signal quality",
+            "More consistent with uplink radio reliability degradation",
+            "More consistent with uplink resource congestion",
+            "More consistent with buffering/traffic-pressure effects",
+            "More consistent with an interaction between multiple mechanisms",
+            "More consistent with another mechanism"
+          ],
+          "constraints": [
+            "Do not investigate",
+            "Do not diagnose",
+            "Do not assume correlation proves causation",
+            "Do not force a conclusion if telemetry evidence cannot distinguish mechanisms; identify evidence gaps instead",
+            "Do not invent identifiers, measurements, or root causes"
+          ]
+        },
+        "rounds_used": 2,
+        "confirmed_facts": [
+          {
+            "fact_id": "t1",
+            "domain": "telemetry",
+            "statement": "For WIN-000037, UL_BLER is higher in degraded sub-intervals than recovered (~0.174 vs ~0.091 using UL_BLER\u226590th percentile).",
+            "confidence": "HIGH",
+            "source_type": "existing",
+            "source_ref": null
+          },
+          {
+            "fact_id": "t2",
+            "domain": "telemetry",
+            "statement": "In degraded sub-intervals, UL_MCS is lower and more variable than in recovered (~13.50 vs ~16.33), with BLER anti-correlated with UL_MCS during degraded samples.",
+            "confidence": "HIGH",
+            "source_type": "existing",
+            "source_ref": null
+          },
+          {
+            "fact_id": "t3",
+            "domain": "telemetry",
+            "statement": "Congestion/buffering is not elevated during degraded: mean UL PRB utilization and Estimated_UL_Buffer are lower in degraded (~1.24 and ~3624) than recovered (~1.76 and ~3833), and BLER is anti-correlated with Estimated_UL_Buffer within degraded intervals.",
+            "confidence": "HIGH",
+            "source_type": "existing",
+            "source_ref": null
+          },
+          {
+            "fact_id": "t4",
+            "domain": "telemetry",
+            "statement": "Timing: after the first BLER-tagged degraded time (~00:05:44.500), UL_MCS low appears first (~00:05:44.800); subsequent threshold excursions occur for Estimated_UL_Buffer (~00:05:45.100), UL PRB utilization (~00:05:45.700), and UL_SNR low (~00:05:46.000).",
+            "confidence": "MEDIUM",
+            "source_type": "existing",
+            "source_ref": null
+          }
+        ],
+        "hypothesis_verdicts": [
+          {
+            "hypothesis_id": "a",
+            "domain": "telemetry",
+            "hypothesis": "Primary mechanism is uplink radio reliability/signal-quality degradation (BLER rise with SNR/instability and/or retransmission signatures; link adaptation via MCS fall/variability).",
+            "status": "supported",
+            "reason": "Strong discriminators align: UL_BLER increases while UL_MCS decreases and becomes more variable, including BLER\u2013MCS anti-correlation during degraded intervals; MCS drops occur earliest after degradation onset.",
+            "confidence": "HIGH"
+          },
+          {
+            "hypothesis_id": "b",
+            "domain": "telemetry",
+            "hypothesis": "Primary mechanism is uplink resource congestion/buffering (PRB/queue/buffer and scheduler/latency increase driving degradation).",
+            "status": "contradicted",
+            "reason": "During degraded intervals, PRB utilization and Estimated_UL_Buffer are lower on average than recovered, and BLER is anti-correlated with Estimated_UL_Buffer; any PRB/buffer threshold crossings appear transient after MCS changes rather than as sustained congestion buildup.",
+            "confidence": "HIGH"
+          },
+          {
+            "hypothesis_id": "c",
+            "domain": "telemetry",
+            "hypothesis": "Radio impairment and congestion interact, with congestion/buffering acting as a secondary/transient effect rather than the root driver.",
+            "status": "inconclusive",
+            "reason": "Evidence shows short transient threshold excursions after MCS/BLER changes, but lack of scheduler-delay/queue semantics and mismatch in degraded averages prevents confirming congestion as a meaningful secondary contributor.",
+            "confidence": "LOW"
+          },
+          {
+            "hypothesis_id": "hyp_a",
+            "domain": "telemetry",
+            "hypothesis": "Uplink radio reliability impairment (degraded signal/link quality) is the driver.",
+            "status": "supported",
+            "reason": "Degraded intervals show higher UL_BLER and lower/less-stable UL_MCS with BLER anti-correlated to MCS, consistent with radio reliability degradation.",
+            "confidence": "HIGH"
+          },
+          {
+            "hypothesis_id": "hyp_b",
+            "domain": "telemetry",
+            "hypothesis": "Uplink resource congestion/buffering is the primary driver of degraded BLER behavior.",
+            "status": "contradicted",
+            "reason": "Degraded intervals have lower UL PRB utilization and lower Estimated_UL_Buffer than recovered; BLER is anti-correlated with Estimated_UL_Buffer in degraded rather than aligned with congestion elevation.",
+            "confidence": "HIGH"
+          },
+          {
+            "hypothesis_id": "hyp_c",
+            "domain": "telemetry",
+            "hypothesis": "A meaningful secondary mechanism is an interaction of reliability degradation with congestion/backlog effects.",
+            "status": "inconclusive",
+            "reason": "Short-lived threshold excursions exist, but the available telemetry does not provide scheduler/backlog semantics needed to confirm congestion/backlog as a secondary retransmission/reliability driver.",
+            "confidence": "MEDIUM"
+          }
+        ],
+        "open_questions": [
+          {
+            "question_id": "q1",
+            "domain": "telemetry",
+            "question": "Do retransmission-related indicators (HARQ/RLC retransmissions, etc.) rise during the degraded sub-intervals in WIN-000037 to directly validate radio reliability impairment as the driver?",
+            "required_evidence": "Time-aligned HARQ/RLC retransmission counts/rates and/or similar link-failure indicators for the degraded vs recovered windows."
+          },
+          {
+            "question_id": "q2",
+            "domain": "telemetry",
+            "question": "Does the \u201cEstimated_UL_Buffer\u201d metric correspond to true queue backlog (and scheduler delay/latency increases), or is it a different construct such that buffer anti-correlation with BLER could reflect something other than congestion?",
+            "required_evidence": "Telemetry clarifying buffer semantics plus scheduler latency/queue depth/backlog metrics aligned with the same degraded/recovered tagging."
+          },
+          {
+            "question_id": "oq_retx",
+            "domain": "telemetry",
+            "question": "For WIN-000037, do HARQ and/or RLC retransmission counts/rates (or radio link-failure counters) increase during BLER-tagged degraded sub-intervals compared to recovered ones, time-aligned?",
+            "required_evidence": "Direct HARQ retransmission metrics and/or RLC retransmission/link-failure counters for the same window/scope as UL_BLER tagging, including degraded vs recovered sub-interval time alignment."
+          },
+          {
+            "question_id": "oq_scheduler_semantics",
+            "domain": "telemetry",
+            "question": "Do Estimated_UL_Buffer and related telemetry map to queue depth/backlog age and scheduler latency for WIN-000037, enabling congestion-to-reliability (retransmission) interpretation?",
+            "required_evidence": "Scheduler/backlog-related counters (e.g., queue depth/age, scheduler latency/HOL blocking, retransmission/ARQ linkage) or a data dictionary tying Estimated_UL_Buffer to retransmission-relevant semantics."
+          }
+        ],
+        "evidence_gaps": [
+          {
+            "domain": "telemetry",
+            "missing_evidence": "HARQ/RLC retransmission or other radio reliability failure counters for WIN-000037 during degraded vs recovered intervals.",
+            "reason": "Not present in the synthesis; without these, the radio mechanism is inferred from BLER/MCS patterns rather than directly validated by retransmission behavior."
+          },
+          {
+            "domain": "telemetry",
+            "missing_evidence": "Scheduler latency/queue backlog/backpressure KPIs and additional radio quality metrics (e.g., CQI/RSRQ/eSINR) time-aligned to degraded/recovered windows.",
+            "reason": "Buffer/PRB indicators alone do not establish congestion semantics, and limited radio quality dimensions (only SNR mentioned; RSRP referenced) restrict diagnosing the physical cause of BLER increase (interference/multipath vs pure adaptation)."
+          },
+          {
+            "domain": "telemetry",
+            "missing_evidence": "HARQ retransmission metrics and/or RLC retransmission counts/rates (or radio link-failure counters) for WIN-000037, time-aligned to BLER-tagged degraded vs recovered sub-intervals.",
+            "reason": "The provided telemetry schema lacks explicit HARQ/RLC retransmission/link-failure counter columns for this window."
+          },
+          {
+            "domain": "telemetry",
+            "missing_evidence": "Scheduler/backlog semantics needed to interpret congestion indicators (e.g., backlog depth/age, scheduler latency, HOL blocking, mapping from buffer estimates to retransmission/ARQ behavior).",
+            "reason": "Estimated_UL_Buffer/PRB utilization alone does not establish congestion as a retransmission-relevant secondary mechanism without backlog-to-scheduler metrics."
+          }
+        ],
+        "final_rca": {
+          "action": "conclude",
+          "conclusion": "WIN-000037 intermittent uplink degradation is most consistent with an uplink radio reliability / signal-quality degradation mechanism (higher UL_BLER with lower and more variable UL_MCS, including BLER\u2013MCS anti-correlation during degraded intervals). Evidence contradicts congestion/buffering as a primary driver because UL PRB utilization and Estimated_UL_Buffer are lower on average in degraded sub-intervals than in recovered ones, with BLER also anti-correlated to Estimated_UL_Buffer within degraded intervals. Buffering/congestion effects may occur transiently, but current telemetry cannot confirm it as a meaningful secondary contributor. Remaining evidence gap: lack of time-aligned HARQ/RLC retransmission or radio link-failure counters to directly validate the reliability impairment via retransmission behavior.",
+          "confidence": "HIGH",
+          "reasoning_summary": "Confirmed telemetry discriminators strongly align with radio reliability degradation (BLER\u2191, UL_MCS\u2193/more variable, BLER anti-correlated with UL_MCS). Concurrent indicators do not align with congestion as primary cause (PRB utilization and Estimated_UL_Buffer are lower during degraded, and BLER is anti-correlated with buffer estimate). Timing suggests MCS low appears before subsequent threshold excursions, further supporting a link-quality/reliability onset rather than backlog-first congestion.",
+          "stop_reason": "sufficient_evidence"
+        }
+      }
+    }
+  ]
+}

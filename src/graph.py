@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
+from datetime import datetime
+from pathlib import Path
 from typing import TypedDict
-from uuid import uuid4
 
 from langgraph.graph import (
     END,
@@ -10,455 +12,487 @@ from langgraph.graph import (
 )
 
 from agents import (
-    build_objective,
     parse_incident,
     run_domain_agent,
     run_rca,
 )
-
-from models import (
-    DomainFindingUpdate,
-    DomainRequest,
-    EvidenceFact,
-    IncidentContext,
-    IncidentObjective,
-    InvestigationEvidenceState,
-    InvestigationResult,
-    OpenQuestion,
-    RCAAction,
-    RCADecision,
-    RuledOutHypothesis,
+from config import (
+    get_runtime_config,
 )
-
-from tools import (
+from models import (
+    DomainUpdate,
+    InvestigationState,
+    RCADecision,
+)
+from runtime import (
     set_runtime_api_key,
 )
 
 
-MAX_RCA_ROUNDS = 3
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+TRACE_DIR = (
+    PROJECT_ROOT
+    / "traces"
+)
 
 
-# ============================================================
-# STATE
-# ============================================================
-
-
-class InvestigationGraphState(
+class GraphState(
     TypedDict,
     total=False,
 ):
+
     incident_text: str
 
-    incident: IncidentContext
-    objective: IncidentObjective
-
-    evidence_state: InvestigationEvidenceState
-
-    active_request: DomainRequest
-    latest_update: DomainFindingUpdate
-
-    rounds_used: int
-
-    domain_history: list[dict]
-    rca_history: list[RCADecision]
-
-    final_rca: RCADecision
-
-
-# ============================================================
-# HELPERS
-# ============================================================
-
-
-def _normalize(
-    value: str,
-) -> str:
-    return " ".join(
-        value.lower().strip().split()
+    investigation: (
+        InvestigationState
     )
 
-
-def _request_id() -> str:
-    return (
-        "REQ-"
-        + uuid4().hex[:8].upper()
+    rca_decision: (
+        RCADecision
     )
+
+    latest_update: (
+        DomainUpdate
+    )
+
+    trace: list[dict]
+
+    final_result: dict
 
 
 # ============================================================
-# INTAKE
+# TRACE
 # ============================================================
 
 
-def intake_node(
-    state: InvestigationGraphState,
-) -> dict:
-    incident = parse_incident(
-        state["incident_text"]
-    )
+def _trace(
+    state: GraphState,
+    *,
+    stage: str,
+    input_data=None,
+    output_data=None,
+):
 
-    objective = build_objective(
-        incident
-    )
-
-    return {
-        "incident": incident,
-        "objective": objective,
-        "evidence_state":
-            InvestigationEvidenceState(),
-        "rounds_used": 0,
-        "domain_history": [],
-        "rca_history": [],
-    }
-
-
-# ============================================================
-# RCA
-# ============================================================
-
-
-def rca_node(
-    state: InvestigationGraphState,
-) -> dict:
-    decision = run_rca(
-        objective=state["objective"],
-        evidence_state=state["evidence_state"],
-        latest_update=state.get(
-            "latest_update"
-        ),
-        rounds_used=state.get(
-            "rounds_used",
-            0,
-        ),
-        max_rounds=MAX_RCA_ROUNDS,
-    )
-
-    history = list(
+    trace = list(
         state.get(
-            "rca_history",
+            "trace",
             [],
         )
     )
 
-    history.append(decision)
+    def serialize(value):
 
-    result = {
-        "rca_history": history
-    }
+        if value is None:
+            return None
 
-    if (
-        decision.action
-        == RCAAction.CONCLUDE
-    ):
-        result["final_rca"] = decision
-        return result
+        if hasattr(
+            value,
+            "model_dump",
+        ):
+            return value.model_dump(
+                exclude_none=True
+            )
 
-    result["active_request"] = (
-        DomainRequest(
-            request_id=_request_id(),
-            domain=decision.request.domain,
-            question=decision.request.question,
-        )
-    )
+        return value
 
-    return result
-
-
-def route_after_rca(
-    state: InvestigationGraphState,
-) -> str:
-    if state.get("final_rca"):
-        return "end"
-
-    return state[
-        "active_request"
-    ].domain
-
-
-# ============================================================
-# SPECIALISTS
-# ============================================================
-
-
-def _specialist_node(
-    state: InvestigationGraphState,
-    domain: str,
-) -> dict:
-    request = state[
-        "active_request"
-    ]
-
-    result = run_domain_agent(
-        domain=domain,
-        objective=state["objective"],
-        request=request,
-        evidence_state=state[
-            "evidence_state"
-        ],
-    )
-
-    history = list(
-        state.get(
-            "domain_history",
-            [],
-        )
-    )
-
-    round_number = (
-        state.get(
-            "rounds_used",
-            0,
-        )
-        + 1
-    )
-
-    history.append(
+    trace.append(
         {
-            "round": round_number,
-            "domain": domain,
-
-            "request": request.model_dump(
-                mode="json"
+            "timestamp": (
+                datetime.now()
+                .astimezone()
+                .isoformat()
             ),
-
-            "tool_calls_used":
-                result["tool_calls_used"],
-
-            "tools": [
-                item.get("tool")
-                for item
-                in result["tool_audit"]
-            ],
-
-            "tool_audit":
-                result["tool_audit"],
-
-            "domain_update":
-                result[
-                    "update"
-                ].model_dump(
-                    mode="json"
-                ),
+            "stage": stage,
+            "input": serialize(
+                input_data
+            ),
+            "output": serialize(
+                output_data
+            ),
         }
     )
 
+    return trace
+
+
+# ============================================================
+# NODES
+# ============================================================
+
+
+def parse_node(
+    state: GraphState,
+):
+
+    incident = parse_incident(
+        state[
+            "incident_text"
+        ]
+    )
+
+    investigation = (
+        InvestigationState(
+            incident=incident
+        )
+    )
+
     return {
-        "latest_update":
-            result["update"],
-
-        "domain_history":
-            history,
-
-        "rounds_used":
-            round_number,
+        "investigation": (
+            investigation
+        ),
+        "trace": _trace(
+            state,
+            stage=(
+                "incident_parser"
+            ),
+            input_data={
+                "raw_incident": (
+                    state[
+                        "incident_text"
+                    ]
+                )
+            },
+            output_data=incident,
+        ),
     }
 
 
-def telemetry_node(
-    state: InvestigationGraphState,
-) -> dict:
-    return _specialist_node(
-        state,
-        "telemetry",
+def rca_node(
+    state: GraphState,
+):
+
+    investigation = (
+        state[
+            "investigation"
+        ]
     )
 
-
-def alarms_node(
-    state: InvestigationGraphState,
-) -> dict:
-    return _specialist_node(
-        state,
-        "alarms",
+    decision = run_rca(
+        investigation
     )
 
+    if (
+        decision.action
+        == "request_more"
+    ):
 
-def topology_node(
-    state: InvestigationGraphState,
-) -> dict:
-    return _specialist_node(
-        state,
-        "topology",
+        investigation.current_task = (
+            decision.request
+        )
+
+    return {
+        "investigation": (
+            investigation
+        ),
+        "rca_decision": (
+            decision
+        ),
+        "trace": _trace(
+            state,
+            stage="rca",
+            input_data={
+                "round": (
+                    investigation
+                    .rounds_used
+                ),
+                "compact_state": {
+                    "confirmed_fact_count": len(
+                        investigation
+                        .confirmed_facts
+                    ),
+                    "verdict_count": len(
+                        investigation
+                        .hypothesis_verdicts
+                    ),
+                    "open_question_count": len(
+                        investigation
+                        .open_questions
+                    ),
+                    "evidence_gap_count": len(
+                        investigation
+                        .evidence_gaps
+                    ),
+                },
+            },
+            output_data=decision,
+        ),
+    }
+
+
+def route_after_rca(
+    state: GraphState,
+):
+
+    decision = state[
+        "rca_decision"
+    ]
+
+    if (
+        decision.action
+        == "conclude"
+    ):
+        return "finish"
+
+    return "domain"
+
+
+def domain_node(
+    state: GraphState,
+):
+
+    investigation = (
+        state[
+            "investigation"
+        ]
     )
 
+    task = (
+        investigation
+        .current_task
+    )
 
-# ============================================================
-# EVIDENCE MERGE
-# ============================================================
+    if not task:
+        raise RuntimeError(
+            "Domain node called without "
+            "a current DomainTask."
+        )
+
+    update, tool_trace = (
+        run_domain_agent(
+            state=investigation,
+            task=task,
+        )
+    )
+
+    trace = _trace(
+        state,
+        stage=(
+            f"{task.domain}_specialist"
+        ),
+        input_data={
+            "task": (
+                task.model_dump()
+            )
+        },
+        output_data={
+            "domain_update": (
+                update.model_dump()
+            ),
+            "tool_trace": (
+                tool_trace
+            ),
+        },
+    )
+
+    return {
+        "latest_update": (
+            update
+        ),
+        "trace": trace,
+    }
 
 
-def merge_evidence_node(
-    state: InvestigationGraphState,
-) -> dict:
-    current = state[
-        "evidence_state"
-    ].model_copy(
-        deep=True
+def apply_update_node(
+    state: GraphState,
+):
+
+    investigation = (
+        state[
+            "investigation"
+        ]
     )
 
     update = state[
         "latest_update"
     ]
 
-    domain = state[
-        "active_request"
-    ].domain
-
-    round_number = state[
-        "rounds_used"
-    ]
-
-    # --------------------------------------------------------
-    # RESOLVE QUESTIONS
-    # --------------------------------------------------------
-
-    resolved = {
-        item
+    # Facts
+    existing_fact_ids = {
+        item.fact_id
         for item
-        in update.resolved_question_ids
-        if item
+        in investigation
+        .confirmed_facts
     }
 
-    if resolved:
-        current.open_questions = [
-            question
-            for question
-            in current.open_questions
-            if question.question_id
-            not in resolved
+    for fact in (
+        update.confirmed
+    ):
+
+        if (
+            fact.fact_id
+            not in existing_fact_ids
+        ):
+            investigation.confirmed_facts.append(
+                fact
+            )
+
+    # Verdicts
+    for verdict in (
+        update.verdicts
+    ):
+
+        investigation.hypothesis_verdicts = [
+            existing
+            for existing
+            in investigation
+            .hypothesis_verdicts
+            if (
+                existing.hypothesis_id
+                != verdict.hypothesis_id
+            )
         ]
 
-    # --------------------------------------------------------
-    # CONFIRMED
-    # --------------------------------------------------------
-
-    existing = {
-        _normalize(item.statement)
-        for item in current.confirmed
-    }
-
-    for index, draft in enumerate(
-        update.new_confirmed,
-        start=1,
-    ):
-        normalized = _normalize(
-            draft.statement
+        investigation.hypothesis_verdicts.append(
+            verdict
         )
 
-        if normalized in existing:
-            continue
-
-        current.confirmed.append(
-            EvidenceFact(
-                fact_id=(
-                    f"{domain[:3].upper()}"
-                    f"-R{round_number}-F{index}"
-                ),
-                domain=domain,
-                statement=draft.statement,
-                evidence=draft.evidence,
-                confidence=draft.confidence,
-                kind=draft.kind,
-                sources=draft.sources,
-            )
-        )
-
-        existing.add(normalized)
-
-    # --------------------------------------------------------
-    # RULED OUT
-    # --------------------------------------------------------
-
-    existing_ruled = {
-        _normalize(item.hypothesis)
-        for item in current.ruled_out
-    }
-
-    for index, draft in enumerate(
-        update.new_ruled_out,
-        start=1,
-    ):
-        normalized = _normalize(
-            draft.hypothesis
-        )
-
-        if normalized in existing_ruled:
-            continue
-
-        current.ruled_out.append(
-            RuledOutHypothesis(
-                hypothesis_id=(
-                    f"{domain[:3].upper()}"
-                    f"-R{round_number}-X{index}"
-                ),
-                domain=domain,
-                hypothesis=draft.hypothesis,
-                reason=draft.reason,
-                confidence=draft.confidence,
-            )
-        )
-
-        existing_ruled.add(normalized)
-
-    # --------------------------------------------------------
-    # OPEN QUESTIONS
-    #
-    # Basic semantic normalization prevents exact/reworded-small
-    # duplicates from exploding state.
-    # --------------------------------------------------------
-
+    # Open questions — keep unique by question text.
     existing_questions = {
-        _normalize(item.question)
-        for item in current.open_questions
+        item.question
+        for item
+        in investigation
+        .open_questions
     }
 
-    for index, draft in enumerate(
-        update.new_open_questions,
-        start=1,
+    for question in (
+        update.open_questions
     ):
-        normalized = _normalize(
-            draft.question
-        )
 
-        if normalized in existing_questions:
-            continue
-
-        current.open_questions.append(
-            OpenQuestion(
-                question_id=(
-                    f"{domain[:3].upper()}"
-                    f"-R{round_number}-Q{index}"
-                ),
-                question=draft.question,
-                domain=domain,
-                availability=draft.availability,
-                required_evidence=(
-                    draft.required_evidence
-                ),
-                suggested_domain=(
-                    draft.suggested_domain
-                ),
+        if (
+            question.question
+            not in existing_questions
+        ):
+            investigation.open_questions.append(
+                question
             )
-        )
 
-        existing_questions.add(
-            normalized
-        )
+    # Evidence gaps
+    existing_gaps = {
+        item.missing_evidence
+        for item
+        in investigation
+        .evidence_gaps
+    }
 
-    # Hard memory bounds.
-    current.confirmed = (
-        current.confirmed[-12:]
-    )
+    for gap in (
+        update.evidence_gaps
+    ):
 
-    current.ruled_out = (
-        current.ruled_out[-8:]
-    )
+        if (
+            gap.missing_evidence
+            not in existing_gaps
+        ):
+            investigation.evidence_gaps.append(
+                gap
+            )
 
-    current.open_questions = (
-        current.open_questions[-8:]
-    )
+    investigation.rounds_used += 1
+
+    investigation.current_task = None
 
     return {
-        "evidence_state": current
+        "investigation": (
+            investigation
+        ),
+        "trace": _trace(
+            state,
+            stage=(
+                "blackboard_update"
+            ),
+            input_data=update,
+            output_data={
+                "confirmed_fact_count": len(
+                    investigation
+                    .confirmed_facts
+                ),
+                "verdict_count": len(
+                    investigation
+                    .hypothesis_verdicts
+                ),
+                "open_question_count": len(
+                    investigation
+                    .open_questions
+                ),
+                "evidence_gap_count": len(
+                    investigation
+                    .evidence_gaps
+                ),
+                "rounds_used": (
+                    investigation
+                    .rounds_used
+                ),
+            },
+        ),
+    }
+
+
+def finish_node(
+    state: GraphState,
+):
+
+    decision = (
+        state[
+            "rca_decision"
+        ]
+    )
+
+    investigation = (
+        state[
+            "investigation"
+        ]
+    )
+
+    result = {
+        "incident": (
+            investigation
+            .incident
+            .model_dump(
+                exclude_none=True
+            )
+        ),
+        "rounds_used": (
+            investigation
+            .rounds_used
+        ),
+        "confirmed_facts": [
+            item.model_dump()
+            for item
+            in investigation
+            .confirmed_facts
+        ],
+        "hypothesis_verdicts": [
+            item.model_dump()
+            for item
+            in investigation
+            .hypothesis_verdicts
+        ],
+        "open_questions": [
+            item.model_dump()
+            for item
+            in investigation
+            .open_questions
+        ],
+        "evidence_gaps": [
+            item.model_dump()
+            for item
+            in investigation
+            .evidence_gaps
+        ],
+        "final_rca": (
+            decision.model_dump(
+                exclude_none=True
+            )
+        ),
+    }
+
+    return {
+        "final_result": result,
+        "trace": _trace(
+            state,
+            stage="finish",
+            output_data=result,
+        ),
     }
 
 
@@ -467,14 +501,15 @@ def merge_evidence_node(
 # ============================================================
 
 
-def build_investigation_graph():
+def build_graph():
+
     builder = StateGraph(
-        InvestigationGraphState
+        GraphState
     )
 
     builder.add_node(
-        "intake",
-        intake_node,
+        "parse",
+        parse_node,
     )
 
     builder.add_node(
@@ -483,32 +518,27 @@ def build_investigation_graph():
     )
 
     builder.add_node(
-        "telemetry",
-        telemetry_node,
+        "domain",
+        domain_node,
     )
 
     builder.add_node(
-        "alarms",
-        alarms_node,
+        "apply_update",
+        apply_update_node,
     )
 
     builder.add_node(
-        "topology",
-        topology_node,
-    )
-
-    builder.add_node(
-        "merge",
-        merge_evidence_node,
+        "finish",
+        finish_node,
     )
 
     builder.add_edge(
         START,
-        "intake",
+        "parse",
     )
 
     builder.add_edge(
-        "intake",
+        "parse",
         "rca",
     )
 
@@ -516,39 +546,34 @@ def build_investigation_graph():
         "rca",
         route_after_rca,
         {
-            "telemetry": "telemetry",
-            "alarms": "alarms",
-            "topology": "topology",
-            "end": END,
+            "domain": (
+                "domain"
+            ),
+            "finish": (
+                "finish"
+            ),
         },
     )
 
     builder.add_edge(
-        "telemetry",
-        "merge",
+        "domain",
+        "apply_update",
     )
 
     builder.add_edge(
-        "alarms",
-        "merge",
-    )
-
-    builder.add_edge(
-        "topology",
-        "merge",
-    )
-
-    builder.add_edge(
-        "merge",
+        "apply_update",
         "rca",
+    )
+
+    builder.add_edge(
+        "finish",
+        END,
     )
 
     return builder.compile()
 
 
-INVESTIGATION_GRAPH = (
-    build_investigation_graph()
-)
+GRAPH = build_graph()
 
 
 # ============================================================
@@ -559,52 +584,86 @@ INVESTIGATION_GRAPH = (
 def run_investigation(
     *,
     incident_text: str,
-    openai_api_key: str,
-) -> InvestigationResult:
-    if not openai_api_key.strip():
-        raise ValueError(
-            "OpenAI API key is required."
-        )
+    api_key: str,
+):
 
-    # Runtime only.
-    # It is never inserted into graph state.
     set_runtime_api_key(
-        openai_api_key.strip()
+        api_key
     )
 
-    result = (
-        INVESTIGATION_GRAPH.invoke(
-            {
-                "incident_text":
-                    incident_text
-            }
+    result = GRAPH.invoke(
+        {
+            "incident_text": (
+                incident_text
+            ),
+            "trace": [],
+        }
+    )
+
+    if (
+        get_runtime_config().get(
+            "save_traces",
+            True,
         )
-    )
+    ):
 
-    final_rca = result.get(
-        "final_rca"
-    )
-
-    if not final_rca:
-        raise RuntimeError(
-            "Investigation ended without "
-            "a final RCA."
+        TRACE_DIR.mkdir(
+            parents=True,
+            exist_ok=True,
         )
 
-    return InvestigationResult(
-        incident=result["incident"],
-        objective=result["objective"],
-        rounds_used=result["rounds_used"],
-        evidence_state=result[
-            "evidence_state"
-        ],
-        domain_history=result.get(
-            "domain_history",
-            [],
-        ),
-        rca_history=result.get(
-            "rca_history",
-            [],
-        ),
-        final_rca=final_rca,
-    )
+        incident_id = (
+            result[
+                "investigation"
+            ]
+            .incident
+            .incident_id
+            or "UNKNOWN"
+        )
+
+        timestamp = (
+            datetime.now()
+            .strftime(
+                "%Y%m%d_%H%M%S"
+            )
+        )
+
+        path = (
+            TRACE_DIR
+            / (
+                f"{incident_id}_"
+                f"{timestamp}.json"
+            )
+        )
+
+        with path.open(
+            "w",
+            encoding="utf-8",
+        ) as handle:
+
+            json.dump(
+                {
+                    "final_result": (
+                        result.get(
+                            "final_result"
+                        )
+                    ),
+                    "trace": (
+                        result.get(
+                            "trace",
+                            [],
+                        )
+                    ),
+                },
+                handle,
+                indent=2,
+                default=str,
+            )
+
+        result[
+            "trace_file"
+        ] = str(
+            path
+        )
+
+    return result

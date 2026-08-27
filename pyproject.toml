@@ -11,6 +11,9 @@ dependencies = [
     "langgraph",
     "openai",
     "pydantic",
+    "python-dotenv>=1.2.3",
+    "pyyaml>=6.0.3",
+    "sqlglot>=30.17.0",
     "streamlit",
 ]
 

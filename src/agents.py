@@ -1,57 +1,45 @@
 from __future__ import annotations
 
 import json
-from typing import Annotated, TypedDict
+import uuid
+from typing import Any
 
 from langchain_core.messages import (
     AIMessage,
-    BaseMessage,
     HumanMessage,
     SystemMessage,
     ToolMessage,
 )
 
-from langgraph.graph import (
-    END,
-    START,
-    StateGraph,
+from config import (
+    get_context_config,
+    get_runtime_config,
 )
-
-from langgraph.graph.message import add_messages
-from langgraph.prebuilt import ToolNode
-
+from llm import get_llm
 from models import (
-    DomainFindingUpdate,
-    DomainRequest,
-    IncidentContext,
-    IncidentObjective,
-    InvestigationEvidenceState,
-    RCAAction,
+    DomainTask,
+    DomainUpdate,
+    EvidenceFact,
+    InvestigationState,
     RCADecision,
-    RCAStopReason,
 )
-
 from prompts import (
+    ALARM_GOVERNANCE,
+    ALARMS_PROMPT,
     COMMON_SPECIALIST_PROMPT,
     DOMAIN_FINALIZER_PROMPT,
-    DOMAIN_PROMPTS,
     INCIDENT_PARSER_PROMPT,
     RCA_PROMPT,
+    TELEMETRY_GOVERNANCE,
+    TELEMETRY_PROMPT,
+    TOPOLOGY_GOVERNANCE,
+    TOPOLOGY_PROMPT,
 )
-
 from tools import (
-    COMMON_TOOLS,
-    create_llm,
+    ALARM_TOOLS,
+    TELEMETRY_TOOLS,
+    TOPOLOGY_TOOLS,
 )
-
-
-MAX_TOOL_CALLS_PER_DOMAIN_ROUND = 3
-
-AVAILABLE_DOMAINS = [
-    "telemetry",
-    "alarms",
-    "topology",
-]
 
 
 # ============================================================
@@ -59,407 +47,246 @@ AVAILABLE_DOMAINS = [
 # ============================================================
 
 
+from models import IncidentContext
+
+
 def parse_incident(
     incident_text: str,
 ) -> IncidentContext:
-    model = create_llm(
-        max_completion_tokens=1200,
-    ).with_structured_output(
-        IncidentContext,
-        method="json_schema",
-    )
 
-    prompt = f"""
-{INCIDENT_PARSER_PROMPT}
-
-INCIDENT|
-{incident_text}
-"""
-
-    result = model.invoke(prompt)
-
-    result.raw_text = incident_text
-
-    return result
-
-
-def build_objective(
-    incident: IncidentContext,
-) -> IncidentObjective:
-    return IncidentObjective(
-        incident_id=incident.incident_id,
-        problem_statement=incident.problem_statement,
-        investigation_goal=incident.investigation_goal,
-        symptoms=incident.symptoms[:8],
-        window_ids=incident.window_ids,
-        component_ids=incident.component_ids,
-        site_ids=incident.site_ids,
-        region=incident.region,
-        zone=incident.zone,
-        start_time=incident.start_time,
-        end_time=incident.end_time,
-    )
-
-
-# ============================================================
-# SPECIALIST SUBGRAPH
-# ============================================================
-
-
-class DomainGraphState(
-    TypedDict,
-    total=False,
-):
-    messages: Annotated[
-        list[BaseMessage],
-        add_messages,
-    ]
-
-    tool_calls_used: int
-
-    final_update: DomainFindingUpdate
-
-
-def _tool_model():
-    return create_llm(
-        max_completion_tokens=1200,
-    ).bind_tools(
-        COMMON_TOOLS
-    )
-
-
-def _finalizer_model():
-    return create_llm(
-        max_completion_tokens=1600,
-    ).with_structured_output(
-        DomainFindingUpdate,
-        method="json_schema",
-    )
-
-
-def _agent_node(
-    state: DomainGraphState,
-) -> dict:
-    response = _tool_model().invoke(
-        state["messages"]
-    )
-
-    calls = (
-        getattr(
-            response,
-            "tool_calls",
-            [],
+    model = (
+        get_llm(
+            "incident_parser"
         )
-        or []
+        .with_structured_output(
+            IncidentContext,
+            method="json_schema",
+        )
     )
 
-    # Hard guard:
-    # execute at most one tool request per reasoning turn.
-    if len(calls) > 1:
-        response.tool_calls = calls[:1]
-        calls = calls[:1]
-
-    return {
-        "messages": [response],
-        "tool_calls_used": (
-            state.get(
-                "tool_calls_used",
-                0,
-            )
-            + len(calls)
-        ),
-    }
-
-
-def _route_after_agent(
-    state: DomainGraphState,
-) -> str:
-    last = state["messages"][-1]
-
-    calls = (
-        getattr(
-            last,
-            "tool_calls",
-            [],
-        )
-        or []
-    )
-
-    if not calls:
-        return "finalize"
-
-    if (
-        state.get(
-            "tool_calls_used",
-            0,
-        )
-        >= MAX_TOOL_CALLS_PER_DOMAIN_ROUND
-    ):
-        return "finalize"
-
-    return "tools"
-
-
-def _compact_transcript(
-    messages: list[BaseMessage],
-) -> str:
-    lines = []
-
-    for message in messages[-14:]:
-        if isinstance(
-            message,
-            SystemMessage,
-        ):
-            continue
-
-        if isinstance(
-            message,
-            HumanMessage,
-        ):
-            lines.append(
-                "REQUEST_CONTEXT: "
-                + str(message.content)[:3500]
-            )
-
-        elif isinstance(
-            message,
-            AIMessage,
-        ):
-            if message.tool_calls:
-                for call in message.tool_calls:
-                    lines.append(
-                        "TOOL_REQUEST: "
-                        + json.dumps(
-                            {
-                                "name": call.get("name"),
-                                "args": call.get("args"),
-                            },
-                            default=str,
-                        )[:2000]
-                    )
-
-            elif message.content:
-                lines.append(
-                    "SPECIALIST_OUTPUT: "
-                    + str(message.content)[:2200]
+    return model.invoke(
+        [
+            SystemMessage(
+                content=(
+                    INCIDENT_PARSER_PROMPT
                 )
-
-        elif isinstance(
-            message,
-            ToolMessage,
-        ):
-            lines.append(
-                "TOOL_RESULT: "
-                + str(message.content)[:5000]
-            )
-
-    return "\n".join(lines)
-
-
-def _finalize_node(
-    state: DomainGraphState,
-) -> dict:
-    transcript = _compact_transcript(
-        state["messages"]
+            ),
+            HumanMessage(
+                content=(
+                    "INCIDENT\n\n"
+                    + incident_text
+                )
+            ),
+        ]
     )
 
-    prompt = f"""
-{DOMAIN_FINALIZER_PROMPT}
 
-INVESTIGATION TRANSCRIPT|
-{transcript}
-"""
+# ============================================================
+# CONTEXT PROJECTIONS
+# ============================================================
 
-    result = _finalizer_model().invoke(
-        prompt
+
+def _limits():
+    return get_context_config()
+
+
+def _relevant_facts(
+    state: InvestigationState,
+    domain: str | None = None,
+) -> list[EvidenceFact]:
+
+    facts = (
+        state.confirmed_facts
     )
 
-    # Defensive cleanup.
-    result.resolved_question_ids = [
-        value
-        for value in result.resolved_question_ids
-        if value
-        and value.strip().lower()
-        not in {
-            "none",
-            "(none)",
-            "n/a",
-            "na",
-        }
-    ]
+    if domain:
+        domain_facts = [
+            fact
+            for fact in facts
+            if fact.domain == domain
+        ]
+
+        cross_domain = [
+            fact
+            for fact in facts
+            if fact.domain != domain
+        ]
+
+        facts = (
+            domain_facts
+            + cross_domain
+        )
+
+    limit = int(
+        _limits().get(
+            "max_confirmed_facts_for_agent",
+            6,
+        )
+    )
+
+    return facts[-limit:]
+
+
+def build_rca_context(
+    state: InvestigationState,
+) -> dict[str, Any]:
+
+    config = _limits()
 
     return {
-        "final_update": result
+        "incident": (
+            state.incident.model_dump(
+                exclude_none=True
+            )
+        ),
+        "confirmed_facts": [
+            item.model_dump()
+            for item
+            in state.confirmed_facts[
+                -int(
+                    config.get(
+                        "max_confirmed_facts_for_agent",
+                        6,
+                    )
+                ):
+            ]
+        ],
+        "hypothesis_verdicts": [
+            item.model_dump()
+            for item
+            in state.hypothesis_verdicts[
+                -int(
+                    config.get(
+                        "max_verdicts_for_agent",
+                        6,
+                    )
+                ):
+            ]
+        ],
+        "open_questions": [
+            item.model_dump()
+            for item
+            in state.open_questions[
+                -int(
+                    config.get(
+                        "max_open_questions_for_agent",
+                        4,
+                    )
+                ):
+            ]
+        ],
+        "evidence_gaps": [
+            item.model_dump()
+            for item
+            in state.evidence_gaps[
+                -int(
+                    config.get(
+                        "max_evidence_gaps_for_agent",
+                        4,
+                    )
+                ):
+            ]
+        ],
+        "rounds_used": (
+            state.rounds_used
+        ),
+        "max_rounds": int(
+            get_runtime_config().get(
+                "max_investigation_rounds",
+                5,
+            )
+        ),
     }
 
 
-def build_domain_graph():
-    builder = StateGraph(
-        DomainGraphState
-    )
+def build_domain_context(
+    state: InvestigationState,
+    task: DomainTask,
+) -> dict[str, Any]:
 
-    builder.add_node(
-        "agent",
-        _agent_node,
-    )
+    config = _limits()
 
-    builder.add_node(
-        "tools",
-        ToolNode(COMMON_TOOLS),
-    )
-
-    builder.add_node(
-        "finalize",
-        _finalize_node,
-    )
-
-    builder.add_edge(
-        START,
-        "agent",
-    )
-
-    builder.add_conditional_edges(
-        "agent",
-        _route_after_agent,
-        {
-            "tools": "tools",
-            "finalize": "finalize",
-        },
-    )
-
-    builder.add_edge(
-        "tools",
-        "agent",
-    )
-
-    builder.add_edge(
-        "finalize",
-        END,
-    )
-
-    return builder.compile()
-
-
-DOMAIN_GRAPH = build_domain_graph()
-
-
-def _domain_messages(
-    *,
-    domain: str,
-    objective: IncidentObjective,
-    request: DomainRequest,
-    evidence_state: InvestigationEvidenceState,
-) -> list[BaseMessage]:
-    system_prompt = (
-        COMMON_SPECIALIST_PROMPT
-        + "\n\n"
-        + DOMAIN_PROMPTS[domain]
-    )
-
-    context = f"""
-INCIDENT OBJECTIVE|
-{objective.model_dump_json(exclude_none=True)}
-
-RCA REQUEST|
-{request.model_dump_json(exclude_none=True)}
-
-CURRENT EVIDENCE|
-{evidence_state.model_dump_json(exclude_none=True)}
-
-Investigate only what is necessary to answer the RCA request.
-"""
-
-    return [
-        SystemMessage(
-            content=system_prompt
-        ),
-        HumanMessage(
-            content=context
-        ),
+    relevant_verdicts = [
+        verdict
+        for verdict
+        in state.hypothesis_verdicts
+        if (
+            verdict.domain
+            == task.domain
+        )
     ]
 
-
-def _tool_audit(
-    messages: list[BaseMessage],
-) -> list[dict]:
-    audit = []
-    pending = {}
-
-    for message in messages:
-        if isinstance(
-            message,
-            AIMessage,
-        ):
-            for call in (
-                message.tool_calls
-                or []
-            ):
-                pending[
-                    call.get("id")
-                ] = {
-                    "tool": call.get("name"),
-                    "args": call.get("args"),
-                }
-
-        elif isinstance(
-            message,
-            ToolMessage,
-        ):
-            item = pending.get(
-                message.tool_call_id,
-                {
-                    "tool": message.name,
-                    "args": {},
-                },
-            )
-
-            audit.append(
-                {
-                    "tool": item["tool"],
-                    "args": item["args"],
-                    "result": str(
-                        message.content
-                    ),
-                }
-            )
-
-    return audit
-
-
-def run_domain_agent(
-    *,
-    domain: str,
-    objective: IncidentObjective,
-    request: DomainRequest,
-    evidence_state: InvestigationEvidenceState,
-) -> dict:
-    if domain not in DOMAIN_PROMPTS:
-        raise ValueError(
-            f"Unsupported domain: {domain}"
+    relevant_questions = [
+        question
+        for question
+        in state.open_questions
+        if (
+            question.domain
+            == task.domain
         )
+    ]
 
-    result = DOMAIN_GRAPH.invoke(
-        {
-            "messages": _domain_messages(
-                domain=domain,
-                objective=objective,
-                request=request,
-                evidence_state=evidence_state,
-            ),
-            "tool_calls_used": 0,
-        }
-    )
-
-    audit = _tool_audit(
-        result["messages"]
-    )
+    relevant_gaps = [
+        gap
+        for gap
+        in state.evidence_gaps
+        if (
+            gap.domain
+            == task.domain
+        )
+    ]
 
     return {
-        "domain": domain,
-        "request": request,
-        "update": result["final_update"],
-        "tool_audit": audit,
-        "tool_calls_used": len(audit),
+        "incident": (
+            state.incident.model_dump(
+                exclude_none=True
+            )
+        ),
+        "task": task.model_dump(),
+        "existing_facts": [
+            fact.model_dump()
+            for fact
+            in _relevant_facts(
+                state,
+                task.domain,
+            )
+        ],
+        "existing_verdicts": [
+            item.model_dump()
+            for item
+            in relevant_verdicts[
+                -int(
+                    config.get(
+                        "max_verdicts_for_agent",
+                        6,
+                    )
+                ):
+            ]
+        ],
+        "open_questions": [
+            item.model_dump()
+            for item
+            in relevant_questions[
+                -int(
+                    config.get(
+                        "max_open_questions_for_agent",
+                        4,
+                    )
+                ):
+            ]
+        ],
+        "evidence_gaps": [
+            item.model_dump()
+            for item
+            in relevant_gaps[
+                -int(
+                    config.get(
+                        "max_evidence_gaps_for_agent",
+                        4,
+                    )
+                ):
+            ]
+        ],
     }
 
 
@@ -469,113 +296,460 @@ def run_domain_agent(
 
 
 def run_rca(
-    *,
-    objective: IncidentObjective,
-    evidence_state: InvestigationEvidenceState,
-    latest_update: DomainFindingUpdate | None,
-    rounds_used: int,
-    max_rounds: int,
+    state: InvestigationState,
 ) -> RCADecision:
-    model = create_llm(
-        max_completion_tokens=1800,
-    ).with_structured_output(
-        RCADecision,
-        method="json_schema",
+
+    max_rounds = int(
+        get_runtime_config().get(
+            "max_investigation_rounds",
+            5,
+        )
     )
 
-    latest = (
-        latest_update.model_dump_json(
-            exclude_none=True
-        )
-        if latest_update
-        else "{}"
-    )
+    if (
+        state.rounds_used
+        >= max_rounds
+    ):
 
-    prompt = f"""
-{RCA_PROMPT}
-
-INCIDENT OBJECTIVE|
-{objective.model_dump_json(exclude_none=True)}
-
-CURRENT EVIDENCE|
-{evidence_state.model_dump_json(exclude_none=True)}
-
-LATEST DOMAIN UPDATE|
-{latest}
-
-ROUNDS USED|
-{rounds_used}/{max_rounds}
-
-AVAILABLE DOMAINS|
-{AVAILABLE_DOMAINS}
-"""
-
-    decision = model.invoke(prompt)
-
-    # ========================================================
-    # DETERMINISTIC ROUND LIMIT
-    # ========================================================
-
-    if rounds_used >= max_rounds:
-        decision.action = RCAAction.CONCLUDE
-        decision.request = None
-        decision.stop_reason = (
-            RCAStopReason.MAX_ROUNDS_REACHED
-        )
-
-        if not decision.conclusion:
-            decision.conclusion = (
+        return RCADecision(
+            action="conclude",
+            conclusion=(
                 "ROOT CAUSE UNDETERMINED: "
-                "the available evidence does not establish "
-                "the underlying physical cause."
-            )
+                "the available evidence does not "
+                "establish a defensible physical "
+                "root cause."
+            ),
+            confidence="MEDIUM",
+            reasoning_summary=(
+                "Maximum investigation rounds "
+                "were reached."
+            ),
+            stop_reason=(
+                "max_rounds_reached"
+            ),
+        )
 
-        return decision
+    context = (
+        build_rca_context(
+            state
+        )
+    )
 
-    # ========================================================
-    # REQUEST MORE
-    # ========================================================
+    model = (
+        get_llm(
+            "rca"
+        )
+        .with_structured_output(
+            RCADecision,
+            method="json_schema",
+        )
+    )
+
+    decision = model.invoke(
+        [
+            SystemMessage(
+                content=(
+                    RCA_PROMPT
+                )
+            ),
+            HumanMessage(
+                content=(
+                    "CURRENT INVESTIGATION STATE\n\n"
+                    + json.dumps(
+                        context,
+                        default=str,
+                    )
+                )
+            ),
+        ]
+    )
 
     if (
         decision.action
-        == RCAAction.REQUEST_MORE
+        == "request_more"
     ):
+
         if not decision.request:
             raise RuntimeError(
                 "RCA requested more evidence "
-                "without a domain request."
-            )
-
-        if (
-            decision.request.domain
-            not in AVAILABLE_DOMAINS
-        ):
-            raise RuntimeError(
-                "Unsupported RCA domain: "
-                + decision.request.domain
+                "without a DomainTask."
             )
 
         decision.conclusion = None
         decision.stop_reason = None
 
-        return decision
+    else:
 
-    # ========================================================
-    # CONCLUDE
-    # ========================================================
+        decision.request = None
 
-    decision.request = None
+        if not decision.conclusion:
+            decision.conclusion = (
+                "ROOT CAUSE UNDETERMINED: "
+                "available evidence is insufficient."
+            )
 
-    if decision.stop_reason is None:
-        decision.stop_reason = (
-            RCAStopReason.SUFFICIENT_EVIDENCE
-        )
-
-    if not decision.conclusion:
-        decision.conclusion = (
-            "ROOT CAUSE UNDETERMINED: "
-            "the available evidence does not establish "
-            "a defensible root cause."
-        )
+        if not decision.stop_reason:
+            decision.stop_reason = (
+                "sufficient_evidence"
+            )
 
     return decision
+
+
+# ============================================================
+# SPECIALIST CONFIGURATION
+# ============================================================
+
+
+def _domain_configuration(
+    domain: str,
+):
+
+    if domain == "telemetry":
+
+        return {
+            "profile": "telemetry",
+            "prompt": (
+                COMMON_SPECIALIST_PROMPT
+                + "\n\n"
+                + TELEMETRY_GOVERNANCE
+                + "\n\n"
+                + TELEMETRY_PROMPT
+            ),
+            "tools": (
+                TELEMETRY_TOOLS
+            ),
+        }
+
+    if domain == "alarms":
+
+        return {
+            "profile": "alarms",
+            "prompt": (
+                COMMON_SPECIALIST_PROMPT
+                + "\n\n"
+                + ALARM_GOVERNANCE
+                + "\n\n"
+                + ALARMS_PROMPT
+            ),
+            "tools": (
+                ALARM_TOOLS
+            ),
+        }
+
+    if domain == "topology":
+
+        return {
+            "profile": "topology",
+            "prompt": (
+                COMMON_SPECIALIST_PROMPT
+                + "\n\n"
+                + TOPOLOGY_GOVERNANCE
+                + "\n\n"
+                + TOPOLOGY_PROMPT
+            ),
+            "tools": (
+                TOPOLOGY_TOOLS
+            ),
+        }
+
+    raise ValueError(
+        f"Unsupported domain: {domain}"
+    )
+
+
+# ============================================================
+# TOOL LOOP
+# ============================================================
+
+
+def run_domain_agent(
+    *,
+    state: InvestigationState,
+    task: DomainTask,
+) -> tuple[
+    DomainUpdate,
+    list[dict],
+]:
+
+    configuration = (
+        _domain_configuration(
+            task.domain
+        )
+    )
+
+    tools = configuration[
+        "tools"
+    ]
+
+    tool_map = {
+        tool.name: tool
+        for tool in tools
+    }
+
+    domain_context = (
+        build_domain_context(
+            state,
+            task,
+        )
+    )
+
+    system_prompt = (
+        configuration[
+            "prompt"
+        ]
+    )
+
+    messages = [
+        SystemMessage(
+            content=system_prompt
+        ),
+        HumanMessage(
+            content=(
+                "DOMAIN CONTEXT\n\n"
+                + json.dumps(
+                    domain_context,
+                    default=str,
+                )
+            )
+        ),
+    ]
+
+    tool_model = (
+        get_llm(
+            configuration[
+                "profile"
+            ]
+        )
+        .bind_tools(
+            tools
+        )
+    )
+
+    max_calls = int(
+        get_runtime_config().get(
+            "max_domain_tool_calls",
+            5,
+        )
+    )
+
+    calls_used = 0
+
+    trace = []
+
+    specialist_synthesis = ""
+
+    while True:
+
+        response = (
+            tool_model.invoke(
+                messages
+            )
+        )
+
+        messages.append(
+            response
+        )
+
+        calls = (
+            getattr(
+                response,
+                "tool_calls",
+                [],
+            )
+            or []
+        )
+
+        if not calls:
+
+            specialist_synthesis = (
+                str(
+                    response.content
+                    or ""
+                )
+            )
+
+            break
+
+        for call in calls:
+
+            if calls_used >= max_calls:
+                break
+
+            name = call.get(
+                "name"
+            )
+
+            args = call.get(
+                "args",
+                {},
+            )
+
+            tool = tool_map.get(
+                name
+            )
+
+            if not tool:
+
+                result = {
+                    "status": "failed",
+                    "error": (
+                        f"Unknown tool: {name}"
+                    ),
+                }
+
+            else:
+
+                try:
+
+                    raw_result = (
+                        tool.invoke(
+                            args
+                        )
+                    )
+
+                    result = (
+                        raw_result
+                    )
+
+                except Exception as exc:
+
+                    result = json.dumps(
+                        {
+                            "status": (
+                                "failed"
+                            ),
+                            "error": str(
+                                exc
+                            ),
+                        }
+                    )
+
+            trace.append(
+                {
+                    "tool": name,
+                    "args": args,
+                    "result": result,
+                }
+            )
+
+            messages.append(
+                ToolMessage(
+                    tool_call_id=(
+                        call.get(
+                            "id"
+                        )
+                    ),
+                    name=name,
+                    content=str(
+                        result
+                    ),
+                )
+            )
+
+            calls_used += 1
+
+        if calls_used >= max_calls:
+
+            synthesis_model = (
+                get_llm(
+                    configuration[
+                        "profile"
+                    ]
+                )
+            )
+
+            messages.append(
+                HumanMessage(
+                    content=(
+                        "Tool budget reached. "
+                        "Produce the concise DOMAIN "
+                        "SYNTHESIS now. Do not request "
+                        "another tool."
+                    )
+                )
+            )
+
+            synthesis = (
+                synthesis_model.invoke(
+                    messages
+                )
+            )
+
+            specialist_synthesis = (
+                str(
+                    synthesis.content
+                    or ""
+                )
+            )
+
+            break
+
+    # ========================================================
+    # COMPACT DOMAIN OUTPUT
+    # ========================================================
+
+    finalizer = (
+        get_llm(
+            "domain_finalizer"
+        )
+        .with_structured_output(
+            DomainUpdate,
+            method="json_schema",
+        )
+    )
+
+    finalizer_context = {
+        "incident_id": (
+            state.incident.incident_id
+        ),
+        "task": (
+            task.model_dump()
+        ),
+        "existing_facts": [
+            fact.model_dump()
+            for fact
+            in _relevant_facts(
+                state,
+                task.domain,
+            )
+        ],
+        "specialist_synthesis": (
+            specialist_synthesis
+        ),
+    }
+
+    update = finalizer.invoke(
+        [
+            SystemMessage(
+                content=(
+                    DOMAIN_FINALIZER_PROMPT
+                )
+            ),
+            HumanMessage(
+                content=json.dumps(
+                    finalizer_context,
+                    default=str,
+                )
+            ),
+        ]
+    )
+
+    return (
+        update,
+        trace,
+    )
+
+
+# ============================================================
+# IDS
+# ============================================================
+
+
+def new_request_id() -> str:
+    return (
+        "REQ-"
+        + uuid.uuid4()
+        .hex[:8]
+        .upper()
+    )
