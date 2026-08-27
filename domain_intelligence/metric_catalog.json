@@ -1,0 +1,634 @@
+{
+  "catalog_id": "TELCO_METRIC_CATALOG",
+  "version": "1.0",
+  "description": "Metric and field semantics for the current telemetry dataset. Schema availability is source-derived; interpretation guidance is engineering semantics and must not be treated as incident evidence.",
+
+  "tables": {
+    "telemetry_windows": {
+      "purpose": "Window-level metadata and classification",
+      "fields": {
+        "window_id": {
+          "type": "identifier",
+          "meaning": "Unique telemetry analysis window identifier",
+          "usage": "Primary scope/filter key for telemetry investigations"
+        },
+        "start_time": {
+          "type": "timestamp",
+          "meaning": "Window start timestamp",
+          "usage": "Temporal scope and alignment"
+        },
+        "end_time": {
+          "type": "timestamp",
+          "meaning": "Window end timestamp",
+          "usage": "Temporal scope and alignment"
+        },
+        "sampling_rate": {
+          "type": "metadata",
+          "meaning": "Sampling-rate metadata for the telemetry window",
+          "usage": "May help interpret sample density and temporal granularity",
+          "caution": "Do not infer units unless documented elsewhere"
+        },
+        "zone": {
+          "type": "context",
+          "meaning": "Zone classification associated with the window",
+          "usage": "Context filtering and segmentation"
+        },
+        "application": {
+          "type": "context",
+          "meaning": "Application classification associated with the window",
+          "usage": "Service/application-specific comparisons"
+        },
+        "mobility": {
+          "type": "context",
+          "meaning": "Mobility classification associated with the window",
+          "usage": "Context for mobility-related analysis"
+        },
+        "congestion": {
+          "type": "label",
+          "meaning": "Congestion classification associated with the window",
+          "usage": "Ground-truth or dataset label only if its generation methodology is known",
+          "caution": "Do not treat this label as independently observed congestion evidence unless provenance is known"
+        },
+        "anomaly_present": {
+          "type": "label",
+          "meaning": "Dataset-level anomaly indicator",
+          "usage": "Evaluation or filtering",
+          "caution": "Do not use as RCA evidence unless the labeling methodology is known"
+        }
+      }
+    },
+
+    "telemetry_summary": {
+      "purpose": "Pre-aggregated window-level telemetry summary",
+      "fields": {
+        "sample_count": {
+          "concept": "sample_volume",
+          "unit": "count",
+          "meaning": "Number of telemetry samples represented by the summary",
+          "supports": [
+            "data_coverage_assessment"
+          ]
+        },
+
+        "avg_rsrp": {
+          "concept": "received_signal_power",
+          "unit": "dBm",
+          "aggregation": "average",
+          "meaning": "Average received reference signal power over the window",
+          "supports": [
+            "coverage_strength_assessment"
+          ],
+          "does_not_prove": [
+            "signal_quality",
+            "interference",
+            "root_cause"
+          ]
+        },
+
+        "min_rsrp": {
+          "concept": "received_signal_power",
+          "unit": "dBm",
+          "aggregation": "minimum",
+          "meaning": "Minimum observed RSRP in the window",
+          "supports": [
+            "worst_observed_signal_strength"
+          ],
+          "caution": "A single minimum does not establish persistent poor coverage"
+        },
+
+        "max_rsrp": {
+          "concept": "received_signal_power",
+          "unit": "dBm",
+          "aggregation": "maximum",
+          "meaning": "Maximum observed RSRP in the window"
+        },
+
+        "avg_dl_bler": {
+          "concept": "downlink_block_error_rate",
+          "unit": "ratio",
+          "aggregation": "average",
+          "meaning": "Average downlink block error rate",
+          "supports": [
+            "downlink_reliability_impairment"
+          ],
+          "does_not_prove": [
+            "packet_loss",
+            "interference",
+            "coverage_failure",
+            "physical_root_cause"
+          ]
+        },
+
+        "max_dl_bler": {
+          "concept": "downlink_block_error_rate",
+          "unit": "ratio",
+          "aggregation": "maximum",
+          "meaning": "Maximum downlink BLER observed in the window",
+          "caution": "Maximum alone does not establish persistence or intermittency"
+        },
+
+        "avg_ul_bler": {
+          "concept": "uplink_block_error_rate",
+          "unit": "ratio",
+          "aggregation": "average",
+          "meaning": "Average uplink block error rate",
+          "supports": [
+            "uplink_reliability_impairment"
+          ],
+          "does_not_prove": [
+            "packet_loss",
+            "interference",
+            "coverage_failure",
+            "physical_root_cause"
+          ]
+        },
+
+        "max_ul_bler": {
+          "concept": "uplink_block_error_rate",
+          "unit": "ratio",
+          "aggregation": "maximum",
+          "meaning": "Maximum uplink BLER observed in the window",
+          "caution": "Maximum alone does not establish persistence or intermittency"
+        },
+
+        "avg_ul_snr": {
+          "concept": "uplink_signal_to_noise_ratio",
+          "unit": "dB",
+          "aggregation": "average",
+          "meaning": "Average uplink signal-to-noise ratio",
+          "supports": [
+            "uplink_signal_quality_assessment"
+          ],
+          "does_not_prove": [
+            "interference_source",
+            "physical_root_cause"
+          ]
+        },
+
+        "min_ul_snr": {
+          "concept": "uplink_signal_to_noise_ratio",
+          "unit": "dB",
+          "aggregation": "minimum",
+          "meaning": "Minimum uplink SNR observed",
+          "caution": "Minimum alone does not establish persistent poor signal quality"
+        },
+
+        "avg_dl_mcs": {
+          "concept": "downlink_modulation_coding_scheme",
+          "unit": "index",
+          "aggregation": "average",
+          "meaning": "Average downlink MCS",
+          "supports": [
+            "link_adaptation_behavior"
+          ],
+          "does_not_prove": [
+            "root_cause",
+            "interference"
+          ]
+        },
+
+        "avg_ul_mcs": {
+          "concept": "uplink_modulation_coding_scheme",
+          "unit": "index",
+          "aggregation": "average",
+          "meaning": "Average uplink MCS",
+          "supports": [
+            "link_adaptation_behavior"
+          ],
+          "does_not_prove": [
+            "root_cause",
+            "interference"
+          ]
+        },
+
+        "avg_prb_utilization_dl": {
+          "concept": "downlink_resource_utilization",
+          "unit": "dataset_defined",
+          "aggregation": "average",
+          "meaning": "Average downlink PRB utilization",
+          "supports": [
+            "downlink_resource_load_assessment"
+          ],
+          "does_not_prove": [
+            "congestion"
+          ],
+          "caution": "Congestion requires high absolute utilization and alignment with service impact; unit/scale should be verified"
+        },
+
+        "avg_prb_utilization_ul": {
+          "concept": "uplink_resource_utilization",
+          "unit": "dataset_defined",
+          "aggregation": "average",
+          "meaning": "Average uplink PRB utilization",
+          "supports": [
+            "uplink_resource_load_assessment"
+          ],
+          "does_not_prove": [
+            "congestion"
+          ],
+          "caution": "Unit/scale should be verified before applying numeric thresholds"
+        },
+
+        "avg_tx_bytes": {
+          "concept": "transmit_byte_counter_or_measurement",
+          "unit": "bytes",
+          "aggregation": "average",
+          "meaning": "Average TX_Bytes value across samples",
+          "does_not_prove": [
+            "throughput"
+          ],
+          "caution": "Do not convert to throughput unless counter semantics and time basis are validated"
+        },
+
+        "avg_rx_bytes": {
+          "concept": "receive_byte_counter_or_measurement",
+          "unit": "bytes",
+          "aggregation": "average",
+          "meaning": "Average RX_Bytes value across samples",
+          "does_not_prove": [
+            "throughput"
+          ],
+          "caution": "Do not convert to throughput unless counter semantics and time basis are validated"
+        }
+      }
+    },
+
+    "telemetry_measurements": {
+      "purpose": "Per-sample telemetry used for temporal, distributional and correlation analysis",
+
+      "fields": {
+        "sample_index": {
+          "concept": "sample_order",
+          "unit": "index",
+          "meaning": "Ordering index for samples within a window",
+          "supports": [
+            "sample_ordering",
+            "equal_sample_bucketing"
+          ]
+        },
+
+        "event_timestamp": {
+          "concept": "event_time",
+          "unit": "timestamp",
+          "meaning": "Timestamp of the telemetry sample",
+          "supports": [
+            "time_series_analysis",
+            "temporal_alignment"
+          ]
+        },
+
+        "RSRP": {
+          "concept": "received_signal_power",
+          "unit": "dBm",
+          "direction": "radio",
+          "meaning": "Reference signal received power",
+          "supports": [
+            "coverage_strength_assessment"
+          ],
+          "related_metrics": [
+            "UL_SNR",
+            "DL_BLER",
+            "UL_BLER",
+            "DL_MCS",
+            "UL_MCS"
+          ],
+          "does_not_prove": [
+            "signal_quality",
+            "interference",
+            "root_cause"
+          ]
+        },
+
+        "DL_BLER": {
+          "concept": "downlink_block_error_rate",
+          "unit": "ratio",
+          "direction": "downlink",
+          "meaning": "Downlink block decoding error rate",
+          "supports": [
+            "downlink_reliability_impairment"
+          ],
+          "related_metrics": [
+            "DL_MCS",
+            "RSRP",
+            "PRB_Utilization_DL"
+          ],
+          "does_not_prove": [
+            "packet_loss",
+            "interference",
+            "coverage_failure",
+            "congestion",
+            "physical_root_cause"
+          ]
+        },
+
+        "UL_BLER": {
+          "concept": "uplink_block_error_rate",
+          "unit": "ratio",
+          "direction": "uplink",
+          "meaning": "Uplink block decoding error rate",
+          "supports": [
+            "uplink_reliability_impairment"
+          ],
+          "related_metrics": [
+            "UL_MCS",
+            "UL_SNR",
+            "RSRP",
+            "PRB_Utilization_UL"
+          ],
+          "does_not_prove": [
+            "packet_loss",
+            "interference",
+            "coverage_failure",
+            "congestion",
+            "physical_root_cause"
+          ]
+        },
+
+        "DL_MCS": {
+          "concept": "downlink_modulation_coding_scheme",
+          "unit": "index",
+          "direction": "downlink",
+          "meaning": "Downlink modulation and coding selection",
+          "supports": [
+            "downlink_link_adaptation_assessment"
+          ],
+          "related_metrics": [
+            "DL_BLER",
+            "RSRP"
+          ],
+          "does_not_prove": [
+            "physical_root_cause"
+          ]
+        },
+
+        "UL_MCS": {
+          "concept": "uplink_modulation_coding_scheme",
+          "unit": "index",
+          "direction": "uplink",
+          "meaning": "Uplink modulation and coding selection",
+          "supports": [
+            "uplink_link_adaptation_assessment"
+          ],
+          "related_metrics": [
+            "UL_BLER",
+            "UL_SNR",
+            "RSRP"
+          ],
+          "does_not_prove": [
+            "physical_root_cause"
+          ]
+        },
+
+        "UL_NPRB": {
+          "concept": "uplink_prb_allocation",
+          "unit": "dataset_defined",
+          "direction": "uplink",
+          "meaning": "Uplink NPRB measurement",
+          "supports": [
+            "uplink_resource_allocation_assessment"
+          ],
+          "caution": "Exact semantic definition and scale should be confirmed from source documentation"
+        },
+
+        "UL_SNR": {
+          "concept": "uplink_signal_to_noise_ratio",
+          "unit": "dB",
+          "direction": "uplink",
+          "meaning": "Uplink signal-to-noise ratio",
+          "supports": [
+            "uplink_signal_quality_assessment"
+          ],
+          "related_metrics": [
+            "UL_BLER",
+            "UL_MCS",
+            "RSRP"
+          ],
+          "does_not_prove": [
+            "interference_source",
+            "physical_root_cause"
+          ]
+        },
+
+        "TX_Bytes": {
+          "concept": "transmit_byte_measurement",
+          "unit": "bytes",
+          "meaning": "Transmit byte value recorded per sample",
+          "supports": [
+            "traffic_volume_analysis_if_semantics_verified"
+          ],
+          "does_not_prove": [
+            "throughput"
+          ],
+          "caution": "Counter-vs-per-interval semantics must be established before computing rates or deltas"
+        },
+
+        "RX_Bytes": {
+          "concept": "receive_byte_measurement",
+          "unit": "bytes",
+          "meaning": "Receive byte value recorded per sample",
+          "supports": [
+            "traffic_volume_analysis_if_semantics_verified"
+          ],
+          "does_not_prove": [
+            "throughput"
+          ],
+          "caution": "Counter-vs-per-interval semantics must be established before computing rates or deltas"
+        },
+
+        "Estimated_UL_Buffer": {
+          "concept": "uplink_buffer_estimate",
+          "unit": "dataset_defined",
+          "direction": "uplink",
+          "meaning": "Estimated uplink buffer quantity",
+          "supports": [
+            "uplink_queue_or_buffer_pressure_assessment"
+          ],
+          "caution": "Exact unit and generation semantics must be confirmed before defining thresholds"
+        },
+
+        "PRBs_DL_Current": {
+          "concept": "current_downlink_prb_allocation",
+          "unit": "dataset_defined",
+          "direction": "downlink",
+          "meaning": "Current downlink PRB quantity/allocation",
+          "supports": [
+            "downlink_resource_usage_assessment"
+          ],
+          "caution": "Interpret relative to total available PRBs or utilization metric when possible"
+        },
+
+        "PRBs_UL_Current": {
+          "concept": "current_uplink_prb_allocation",
+          "unit": "dataset_defined",
+          "direction": "uplink",
+          "meaning": "Current uplink PRB quantity/allocation",
+          "supports": [
+            "uplink_resource_usage_assessment"
+          ],
+          "caution": "Interpret relative to total available PRBs or utilization metric when possible"
+        },
+
+        "PRB_Utilization_DL": {
+          "concept": "downlink_resource_utilization",
+          "unit": "dataset_defined",
+          "direction": "downlink",
+          "meaning": "Downlink PRB utilization measurement",
+          "supports": [
+            "downlink_resource_load_assessment",
+            "congestion_hypothesis_testing"
+          ],
+          "does_not_prove": [
+            "congestion"
+          ],
+          "related_metrics": [
+            "PRBs_DL_Current",
+            "DL_BLER",
+            "DL_MCS",
+            "RX_Bytes"
+          ],
+          "caution": "Verify scale before applying numeric congestion thresholds"
+        },
+
+        "PRB_Utilization_UL": {
+          "concept": "uplink_resource_utilization",
+          "unit": "dataset_defined",
+          "direction": "uplink",
+          "meaning": "Uplink PRB utilization measurement",
+          "supports": [
+            "uplink_resource_load_assessment",
+            "congestion_hypothesis_testing"
+          ],
+          "does_not_prove": [
+            "congestion"
+          ],
+          "related_metrics": [
+            "PRBs_UL_Current",
+            "UL_NPRB",
+            "UL_BLER",
+            "UL_MCS",
+            "TX_Bytes"
+          ],
+          "caution": "Verify scale before applying numeric congestion thresholds"
+        },
+
+        "UL_Protocol": {
+          "concept": "uplink_protocol",
+          "unit": "category",
+          "meaning": "Protocol classification associated with uplink traffic",
+          "supports": [
+            "traffic_segmentation"
+          ]
+        },
+
+        "UL_NumberOfPackets": {
+          "concept": "uplink_packet_count",
+          "unit": "packets",
+          "direction": "uplink",
+          "meaning": "Uplink packet count measurement",
+          "supports": [
+            "uplink_traffic_volume_assessment"
+          ],
+          "does_not_prove": [
+            "packet_loss",
+            "packet_error_rate"
+          ]
+        },
+
+        "DL_Protocol": {
+          "concept": "downlink_protocol",
+          "unit": "category",
+          "meaning": "Protocol classification associated with downlink traffic",
+          "supports": [
+            "traffic_segmentation"
+          ]
+        },
+
+        "DL_NumberOfPackets": {
+          "concept": "downlink_packet_count",
+          "unit": "packets",
+          "direction": "downlink",
+          "meaning": "Downlink packet count measurement",
+          "supports": [
+            "downlink_traffic_volume_assessment"
+          ],
+          "does_not_prove": [
+            "packet_loss",
+            "packet_error_rate"
+          ]
+        }
+      }
+    }
+  },
+
+  "cross_metric_guidance": {
+    "coverage_hypothesis": {
+      "use": [
+        "RSRP"
+      ],
+      "corroborate_with": [
+        "UL_SNR",
+        "DL_BLER",
+        "UL_BLER",
+        "DL_MCS",
+        "UL_MCS"
+      ],
+      "rule": "Poor RSRP may support a coverage hypothesis, but RSRP alone does not establish physical root cause."
+    },
+
+    "radio_reliability_hypothesis": {
+      "use": [
+        "DL_BLER",
+        "UL_BLER"
+      ],
+      "corroborate_with": [
+        "DL_MCS",
+        "UL_MCS",
+        "UL_SNR",
+        "RSRP"
+      ],
+      "rule": "Elevated BLER supports reliability impairment. It does not identify why decoding is failing."
+    },
+
+    "congestion_hypothesis": {
+      "use": [
+        "PRB_Utilization_DL",
+        "PRB_Utilization_UL",
+        "PRBs_DL_Current",
+        "PRBs_UL_Current",
+        "UL_NPRB"
+      ],
+      "corroborate_with": [
+        "RX_Bytes",
+        "TX_Bytes",
+        "DL_NumberOfPackets",
+        "UL_NumberOfPackets",
+        "Estimated_UL_Buffer"
+      ],
+      "rule": "Congestion requires evidence of high resource demand/utilization aligned with service impact; relative differences alone are insufficient."
+    },
+
+    "link_adaptation_hypothesis": {
+      "use": [
+        "DL_MCS",
+        "UL_MCS"
+      ],
+      "corroborate_with": [
+        "DL_BLER",
+        "UL_BLER",
+        "UL_SNR",
+        "RSRP"
+      ],
+      "rule": "MCS changes describe link adaptation behavior but do not independently establish the cause of that behavior."
+    },
+
+    "traffic_degradation_analysis": {
+      "use": [
+        "RX_Bytes",
+        "TX_Bytes",
+        "DL_NumberOfPackets",
+        "UL_NumberOfPackets"
+      ],
+      "rule": "Do not calculate throughput from byte fields until their counter semantics and time basis are verified."
+    }
+  }
+}

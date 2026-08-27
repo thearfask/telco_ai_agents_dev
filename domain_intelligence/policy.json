@@ -1,0 +1,217 @@
+{
+  "policy_id": "TELCO_AI_INVESTIGATION_POLICY",
+  "version": "1.0",
+  "status": "active",
+  "description": "Organization-wide investigation policy for autonomous telco RCA agents.",
+
+  "global": {
+    "evidence": {
+      "never_invent_missing_evidence": true,
+      "distinguish_observed_from_inferred": true,
+      "distinguish_knowledge_from_incident_evidence": true,
+      "knowledge_is_not_incident_proof": true,
+      "historical_similarity_is_not_incident_proof": true,
+      "correlation_does_not_establish_causation": true,
+      "absence_of_evidence_does_not_prove_absence": true
+    },
+
+    "reasoning": {
+      "prefer_existing_evidence_before_new_tool_calls": true,
+      "use_minimum_evidence_needed": true,
+      "investigate_material_uncertainty_only": true,
+      "allow_multiple_competing_hypotheses": true,
+      "actively_seek_contradicting_evidence": true,
+      "do_not_force_root_cause": true,
+      "allow_root_cause_undetermined": true,
+      "separate_symptom_impairment_driver_and_root_cause": true
+    },
+
+    "claims": {
+      "temporal_change_requires_temporal_comparison": true,
+      "baseline_claim_requires_valid_baseline": true,
+      "causal_claim_requires_supporting_evidence": true,
+      "cross_domain_claim_requires_cross_domain_evidence": true,
+      "do_not_relabel_metrics": true
+    },
+
+    "tool_usage": {
+      "tool_call_requires_specific_evidence_goal": true,
+      "avoid_duplicate_queries": true,
+      "avoid_querying_unavailable_evidence_repeatedly": true,
+      "prefer_small_focused_queries": true,
+      "do_not_use_tool_only_because_available": true
+    },
+
+    "context_management": {
+      "send_compact_findings_to_rca": true,
+      "do_not_send_raw_tool_output_to_rca": true,
+      "retain_confirmed_findings": true,
+      "retain_material_ruled_out_hypotheses": true,
+      "retain_material_open_questions": true,
+      "remove_resolved_open_questions": true
+    }
+  },
+
+  "rca": {
+    "domain_selection": {
+      "invoke_only_relevant_domains": true,
+      "multiple_domains_may_be_invoked": true,
+      "domains_may_be_added_in_later_rounds": true,
+      "domain_must_have_material_question": true,
+      "do_not_invoke_all_domains_by_default": true
+    },
+
+    "investigation": {
+      "domain_agents_own_domain_investigation": true,
+      "rca_should_not_micromanage_tool_queries": true,
+      "rca_should_integrate_cross_domain_evidence": true,
+      "request_additional_round_only_if_material": true,
+      "stop_when_remaining_questions_will_not_materially_change_rca": true
+    },
+
+    "conclusion": {
+      "root_cause_requires_supported_evidence_chain": true,
+      "state_confidence": true,
+      "state_material_uncertainty": true,
+      "state_ruled_out_major_hypotheses_when_relevant": true,
+      "use_root_cause_undetermined_when_not_established": true
+    }
+  },
+
+  "telemetry": {
+    "scope": {
+      "responsible_for_measured_network_behavior": true,
+      "may_identify_telemetry_level_impairment": true,
+      "may_rank_telemetry_supported_hypotheses": true,
+      "must_not_claim_physical_failure_without_support": true
+    },
+
+    "metric_semantics": {
+      "bler_is_not_packet_loss": true,
+      "bler_alone_is_not_root_cause": true,
+      "bytes_are_not_throughput_without_time_basis": true,
+      "prb_utilization_alone_does_not_prove_congestion": true,
+      "rsrp_alone_does_not_establish_radio_quality": true,
+      "mcs_alone_does_not_establish_root_cause": true
+    },
+
+    "congestion": {
+      "require_absolute_resource_utilization_evidence": true,
+      "relative_difference_alone_is_insufficient": true,
+      "require_alignment_with_reported_service_degradation": true,
+      "prefer_supporting_load_or_scheduler_evidence_when_available": true
+    },
+
+    "radio_reliability": {
+      "elevated_bler_supports_reliability_impairment": true,
+      "bler_does_not_identify_physical_mechanism": true,
+      "evaluate_ul_and_dl_independently": true,
+      "consider_signal_resource_and_link_adaptation_evidence": true
+    },
+
+    "signal_quality": {
+      "do_not_equate_signal_strength_with_signal_quality": true,
+      "healthy_rsrp_does_not_rule_out_interference": true,
+      "poor_rsrp_may_support_coverage_hypothesis_but_does_not_prove_it": true
+    },
+
+    "temporal_analysis": {
+      "average_min_max_do_not_prove_burstiness": true,
+      "intermittency_requires_time_resolved_evidence": true,
+      "degradation_requires_comparison_across_time_or_baseline": true
+    },
+
+    "sql": {
+      "preserve_incident_scope": true,
+      "preserve_window_scope": true,
+      "never_expand_scope_without_explicit_reason": true,
+      "prefer_simple_duckdb_queries": true,
+      "split_complex_analysis_into_sequential_queries": true,
+      "use_only_available_schema": true,
+      "do_not_manufacture_missing_kpis": true
+    },
+
+    "escalation": {
+      "hardware_hypothesis_should_request_alarm_or_log_evidence": true,
+      "shared_dependency_hypothesis_should_request_topology_evidence": true,
+      "unresolved_cross_domain_question_should_be_returned_to_rca": true
+    }
+  },
+
+  "alarms": {
+    "scope": {
+      "responsible_for_operational_alarm_and_event_evidence": true,
+      "may_identify_correlated_alarm_patterns": true,
+      "must_not_assume_alarm_is_root_cause": true
+    },
+
+    "reasoning": {
+      "alarm_presence_does_not_prove_causality": true,
+      "alarm_severity_does_not_prove_root_cause": true,
+      "correlate_alarm_timing_with_incident": true,
+      "distinguish_primary_secondary_and_symptom_alarms_when_supported": true,
+      "consider_activation_and_clearance_sequence": true,
+      "consider_repeated_or_flapping_events": true
+    },
+
+    "absence": {
+      "no_alarm_does_not_prove_component_health": true,
+      "missing_alarm_data_must_be_reported_as_unavailable": true
+    },
+
+    "escalation": {
+      "performance_impact_should_request_relevant_telemetry_evidence": true,
+      "dependency_related_alarm_patterns_should_request_topology_evidence": true
+    }
+  },
+
+  "topology": {
+    "scope": {
+      "responsible_for_network_relationships_and_dependencies": true,
+      "may_identify_shared_dependencies": true,
+      "may_assess_potential_blast_radius": true,
+      "must_not_invent_relationships": true
+    },
+
+    "reasoning": {
+      "relationships_must_come_from_topology_evidence": true,
+      "naming_similarity_is_not_topology_evidence": true,
+      "shared_dependency_does_not_prove_dependency_failure": true,
+      "distinguish_shared_path_from_failed_path": true,
+      "distinguish_possible_blast_radius_from_observed_impact": true
+    },
+
+    "escalation": {
+      "suspected_dependency_failure_should_request_alarm_or_log_evidence": true,
+      "suspected_performance_effect_should_request_telemetry_evidence": true
+    }
+  },
+
+  "knowledge_usage": {
+    "rag": {
+      "use_when_domain_reference_knowledge_is_needed": true,
+      "do_not_retrieve_when_current_context_is_sufficient": true,
+      "prefer_domain_and_context_filtered_retrieval": true,
+      "retrieved_documentation_is_knowledge_not_observed_evidence": true,
+      "prefer_current_applicable_document_version": true
+    },
+
+    "policy_precedence": {
+      "organization_policy_overrides_general_model_knowledge": true,
+      "applicable_specific_policy_overrides_general_policy": true,
+      "incident_evidence_does_not_override_policy_constraints": true
+    }
+  },
+
+  "confidence": {
+    "high": {
+      "description": "Direct and consistent evidence supports the conclusion with no material contradiction."
+    },
+    "medium": {
+      "description": "Evidence supports the conclusion but meaningful uncertainty or missing corroboration remains."
+    },
+    "low": {
+      "description": "Evidence is incomplete, indirect, weak, or multiple explanations remain materially plausible."
+    }
+  }
+}

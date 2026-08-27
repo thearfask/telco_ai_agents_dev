@@ -1,0 +1,847 @@
+{
+  "catalog_id": "TELCO_DIAGNOSTIC_PATTERNS",
+  "version": "1.0",
+  "domain": "telemetry",
+  "description": "Engineering hypothesis patterns used by the telemetry specialist to plan investigations, interpret evidence, identify contradictions, and determine when another domain is required.",
+
+  "patterns": [
+    {
+      "hypothesis_id": "radio_link_reliability_impairment",
+      "name": "Radio link reliability impairment",
+      "description": "Radio blocks are being decoded unsuccessfully often enough to impair reliable delivery.",
+
+      "aliases": [
+        "radio reliability issue",
+        "high bler",
+        "block errors",
+        "radio transmission errors",
+        "decoding errors"
+      ],
+
+      "applicable_symptoms": [
+        "intermittent degradation",
+        "unstable data transfer",
+        "throughput degradation",
+        "poor application performance despite maintained connectivity"
+      ],
+
+      "primary_concepts": [
+        "radio_reliability"
+      ],
+
+      "supporting_concepts": [
+        "signal_quality",
+        "signal_strength",
+        "link_adaptation"
+      ],
+
+      "supporting_evidence": [
+        {
+          "pattern": "DL BLER is elevated materially during the affected scope",
+          "strength": "strong",
+          "supports": "downlink reliability impairment"
+        },
+        {
+          "pattern": "UL BLER is elevated materially during the affected scope",
+          "strength": "strong",
+          "supports": "uplink reliability impairment"
+        },
+        {
+          "pattern": "BLER degradation aligns temporally with reported service degradation",
+          "strength": "strong",
+          "supports": "relationship between radio reliability impairment and service impact"
+        },
+        {
+          "pattern": "Elevated BLER is accompanied by degraded MCS or signal-quality indicators",
+          "strength": "supporting",
+          "supports": "radio-condition-related mechanism"
+        }
+      ],
+
+      "contradicting_evidence": [
+        {
+          "pattern": "BLER remains consistently low throughout the affected period",
+          "strength": "strong",
+          "contradicts": "radio reliability impairment as the dominant measured impairment"
+        }
+      ],
+
+      "investigation_sequence": [
+        "Determine whether impairment is DL, UL, or bidirectional",
+        "Assess BLER magnitude, distribution, persistence, and peaks",
+        "Check temporal alignment with reported degradation",
+        "Inspect signal quality and signal strength",
+        "Inspect MCS behavior for link-adaptation response",
+        "Inspect resource utilization to separate reliability impairment from congestion"
+      ],
+
+      "can_conclude": [
+        "radio reliability impairment exists",
+        "whether impairment is predominantly uplink or downlink",
+        "whether available telemetry supports association with service degradation"
+      ],
+
+      "cannot_conclude_alone": [
+        "interference source",
+        "hardware failure",
+        "antenna fault",
+        "scheduler defect",
+        "physical root cause"
+      ],
+
+      "cross_domain_escalation": [
+        {
+          "domain": "alarms",
+          "when": "telemetry supports reliability impairment but the physical or equipment mechanism remains unexplained",
+          "question": "Are there radio, hardware, transport, or processing alarms temporally aligned with the impairment?"
+        },
+        {
+          "domain": "topology",
+          "when": "the impairment may be associated with shared infrastructure or a specific network element",
+          "question": "Do affected entities share a common radio or transport dependency?"
+        }
+      ]
+    },
+
+    {
+      "hypothesis_id": "coverage_degradation",
+      "name": "Coverage degradation",
+      "description": "Insufficient received signal strength contributes materially to degraded radio performance.",
+
+      "aliases": [
+        "poor coverage",
+        "weak signal",
+        "low rsrp",
+        "coverage issue",
+        "signal strength degradation"
+      ],
+
+      "applicable_symptoms": [
+        "throughput degradation",
+        "radio reliability degradation",
+        "unstable connectivity",
+        "mobility-related degradation"
+      ],
+
+      "primary_concepts": [
+        "signal_strength"
+      ],
+
+      "supporting_concepts": [
+        "radio_reliability",
+        "signal_quality",
+        "link_adaptation"
+      ],
+
+      "supporting_evidence": [
+        {
+          "pattern": "RSRP is degraded during the affected period",
+          "strength": "supporting",
+          "supports": "coverage-related hypothesis"
+        },
+        {
+          "pattern": "RSRP deterioration aligns with increased BLER",
+          "strength": "strong",
+          "supports": "coverage-related contribution to reliability degradation"
+        },
+        {
+          "pattern": "RSRP deterioration aligns with reduced MCS",
+          "strength": "supporting",
+          "supports": "link adaptation responding to poorer radio conditions"
+        },
+        {
+          "pattern": "Poor RSRP persists across a substantial portion of the affected scope",
+          "strength": "strong",
+          "supports": "persistent coverage weakness rather than isolated sample variation"
+        }
+      ],
+
+      "contradicting_evidence": [
+        {
+          "pattern": "RSRP is strong and stable throughout the degradation",
+          "strength": "strong",
+          "contradicts": "weak received signal strength as the primary explanation"
+        }
+      ],
+
+      "investigation_sequence": [
+        "Inspect RSRP level and distribution",
+        "Determine whether poor RSRP is persistent or isolated",
+        "Compare RSRP behavior with BLER",
+        "Compare RSRP behavior with MCS",
+        "Inspect available signal-quality indicators"
+      ],
+
+      "can_conclude": [
+        "whether available telemetry supports weak received signal strength",
+        "whether signal-strength degradation aligns with measured radio impairment"
+      ],
+
+      "cannot_conclude_alone": [
+        "antenna failure",
+        "RF hardware failure",
+        "coverage hole location",
+        "interference source"
+      ],
+
+      "cross_domain_escalation": [
+        {
+          "domain": "topology",
+          "when": "coverage degradation appears localized to particular network infrastructure",
+          "question": "What serving radio elements and shared dependencies are associated with the affected scope?"
+        },
+        {
+          "domain": "alarms",
+          "when": "persistent abnormal signal behavior raises a possible equipment or site issue",
+          "question": "Are there radio-unit, antenna-path, site, or related alarms aligned with the degradation?"
+        }
+      ]
+    },
+
+    {
+      "hypothesis_id": "signal_quality_degradation",
+      "name": "Signal quality degradation",
+      "description": "Radio signal quality is degraded even when received signal strength may remain acceptable.",
+
+      "aliases": [
+        "poor signal quality",
+        "poor snr",
+        "low snr",
+        "radio quality issue",
+        "possible interference"
+      ],
+
+      "applicable_symptoms": [
+        "high BLER",
+        "low MCS",
+        "throughput degradation",
+        "radio reliability degradation"
+      ],
+
+      "primary_concepts": [
+        "signal_quality"
+      ],
+
+      "supporting_concepts": [
+        "radio_reliability",
+        "link_adaptation",
+        "signal_strength"
+      ],
+
+      "supporting_evidence": [
+        {
+          "pattern": "UL SNR is degraded while UL BLER is elevated",
+          "strength": "strong",
+          "supports": "uplink signal-quality-related impairment"
+        },
+        {
+          "pattern": "UL SNR deterioration aligns with lower UL MCS",
+          "strength": "supporting",
+          "supports": "link adaptation responding to poorer uplink quality"
+        },
+        {
+          "pattern": "RSRP remains relatively healthy while SNR and reliability degrade",
+          "strength": "supporting",
+          "supports": "quality impairment not explained by received signal strength alone"
+        }
+      ],
+
+      "contradicting_evidence": [
+        {
+          "pattern": "Available signal-quality indicators remain stable and healthy during degradation",
+          "strength": "supporting",
+          "contradicts": "measured signal-quality degradation"
+        }
+      ],
+
+      "investigation_sequence": [
+        "Inspect available signal-quality metrics",
+        "Compare signal quality with BLER",
+        "Compare signal quality with MCS",
+        "Compare signal quality with signal strength",
+        "Determine whether degradation is directional"
+      ],
+
+      "can_conclude": [
+        "whether measured signal quality is degraded",
+        "whether signal-quality degradation aligns with reliability or link-adaptation changes"
+      ],
+
+      "cannot_conclude_alone": [
+        "interference source",
+        "interference type",
+        "hardware defect"
+      ],
+
+      "data_limitations": [
+        "Current dataset contains UL_SNR but no explicit DL signal-quality metric such as DL SINR/RSRQ",
+        "Current dataset contains no direct interference-power measurement"
+      ],
+
+      "cross_domain_escalation": [
+        {
+          "domain": "alarms",
+          "when": "quality degradation remains unexplained by available telemetry",
+          "question": "Are there radio or hardware events aligned with the quality degradation?"
+        }
+      ]
+    },
+
+    {
+      "hypothesis_id": "radio_resource_congestion",
+      "name": "Radio resource congestion",
+      "description": "Available radio resources are heavily utilized such that demand may exceed or approach available scheduling capacity.",
+
+      "aliases": [
+        "congestion",
+        "radio congestion",
+        "prb congestion",
+        "resource saturation",
+        "high load"
+      ],
+
+      "applicable_symptoms": [
+        "throughput degradation",
+        "slow transfers",
+        "performance degradation under load",
+        "buffer growth"
+      ],
+
+      "primary_concepts": [
+        "resource_utilization"
+      ],
+
+      "supporting_concepts": [
+        "traffic_load",
+        "buffer_pressure"
+      ],
+
+      "supporting_evidence": [
+        {
+          "pattern": "Absolute PRB utilization is persistently high during degradation",
+          "strength": "strong",
+          "supports": "resource pressure"
+        },
+        {
+          "pattern": "High PRB utilization aligns temporally with degraded service behavior",
+          "strength": "strong",
+          "supports": "resource congestion contribution"
+        },
+        {
+          "pattern": "Elevated resource utilization is accompanied by traffic demand or buffer pressure",
+          "strength": "strong",
+          "supports": "demand-driven congestion"
+        }
+      ],
+
+      "contradicting_evidence": [
+        {
+          "pattern": "Absolute PRB utilization remains consistently low during degradation",
+          "strength": "strong",
+          "contradicts": "radio resource saturation as the primary mechanism"
+        },
+        {
+          "pattern": "Resource utilization does not increase during degraded periods",
+          "strength": "supporting",
+          "contradicts": "load-driven degradation"
+        }
+      ],
+
+      "investigation_sequence": [
+        "Inspect absolute DL and UL PRB utilization",
+        "Determine whether utilization is persistent or transient",
+        "Compare utilization with reported degradation",
+        "Inspect traffic demand and packet volume",
+        "Inspect estimated UL buffer where directionally relevant"
+      ],
+
+      "can_conclude": [
+        "whether radio resource pressure is present",
+        "whether available evidence supports or contradicts radio resource congestion"
+      ],
+
+      "cannot_conclude_alone": [
+        "transport congestion",
+        "scheduler software defect",
+        "backhaul bottleneck"
+      ],
+
+      "cross_domain_escalation": [
+        {
+          "domain": "topology",
+          "when": "service degradation persists without radio resource saturation and a shared upstream bottleneck is plausible",
+          "question": "Do affected entities share a transport or infrastructure dependency?"
+        },
+        {
+          "domain": "alarms",
+          "when": "resource behavior appears abnormal rather than demand-driven",
+          "question": "Are scheduler, processing, capacity, or related alarms present?"
+        }
+      ]
+    },
+
+    {
+      "hypothesis_id": "link_adaptation_degradation",
+      "name": "Link adaptation degradation",
+      "description": "MCS behavior indicates adaptation toward less efficient modulation/coding or an abnormal relationship between selected MCS and observed reliability.",
+
+      "aliases": [
+        "mcs issue",
+        "link adaptation",
+        "low mcs",
+        "modulation degradation",
+        "coding degradation"
+      ],
+
+      "applicable_symptoms": [
+        "throughput degradation",
+        "high BLER",
+        "radio quality degradation"
+      ],
+
+      "primary_concepts": [
+        "link_adaptation"
+      ],
+
+      "supporting_concepts": [
+        "radio_reliability",
+        "signal_quality",
+        "signal_strength"
+      ],
+
+      "supporting_evidence": [
+        {
+          "pattern": "MCS decreases during degraded radio conditions",
+          "strength": "supporting",
+          "supports": "expected adaptation to poorer conditions"
+        },
+        {
+          "pattern": "High BLER persists despite MCS adaptation",
+          "strength": "supporting",
+          "supports": "persistent reliability impairment despite adaptation"
+        },
+        {
+          "pattern": "MCS changes align temporally with reliability degradation",
+          "strength": "supporting",
+          "supports": "relationship between link adaptation and observed impairment"
+        }
+      ],
+
+      "contradicting_evidence": [
+        {
+          "pattern": "MCS remains stable while the investigated impairment changes materially",
+          "strength": "supporting",
+          "contradicts": "MCS behavior as the dominant measured differentiator"
+        }
+      ],
+
+      "investigation_sequence": [
+        "Inspect DL and UL MCS independently",
+        "Compare MCS with corresponding BLER",
+        "Compare UL MCS with UL SNR",
+        "Compare MCS with RSRP where relevant",
+        "Assess temporal alignment rather than averages alone"
+      ],
+
+      "can_conclude": [
+        "whether link-adaptation behavior changes during degradation",
+        "whether MCS behavior aligns with reliability or signal-quality changes"
+      ],
+
+      "cannot_conclude_alone": [
+        "scheduler defect",
+        "incorrect link adaptation algorithm",
+        "software bug",
+        "physical root cause"
+      ],
+
+      "cross_domain_escalation": [
+        {
+          "domain": "alarms",
+          "when": "link-adaptation behavior appears abnormal and an equipment/software mechanism is suspected",
+          "question": "Are there relevant radio, scheduler, processing, or software alarms/events?"
+        }
+      ]
+    },
+
+    {
+      "hypothesis_id": "uplink_specific_impairment",
+      "name": "Uplink-dominant impairment",
+      "description": "Measured degradation is materially stronger on the uplink than on the downlink.",
+
+      "aliases": [
+        "uplink issue",
+        "ul degradation",
+        "uplink impairment",
+        "ul problem"
+      ],
+
+      "applicable_symptoms": [
+        "upload degradation",
+        "uplink reliability degradation",
+        "asymmetric performance"
+      ],
+
+      "primary_concepts": [
+        "uplink_radio_reliability",
+        "uplink_signal_quality",
+        "uplink_link_adaptation",
+        "uplink_resource_utilization"
+      ],
+
+      "supporting_evidence": [
+        {
+          "pattern": "UL BLER is materially more impaired than DL BLER",
+          "strength": "strong",
+          "supports": "uplink-dominant reliability impairment"
+        },
+        {
+          "pattern": "UL SNR degradation aligns with UL BLER or UL MCS degradation",
+          "strength": "strong",
+          "supports": "uplink radio-quality contribution"
+        },
+        {
+          "pattern": "UL resource pressure aligns with reported uplink degradation",
+          "strength": "supporting",
+          "supports": "uplink resource contribution"
+        }
+      ],
+
+      "contradicting_evidence": [
+        {
+          "pattern": "UL metrics remain healthy while DL metrics show dominant degradation",
+          "strength": "strong",
+          "contradicts": "uplink-dominant impairment"
+        }
+      ],
+
+      "investigation_sequence": [
+        "Compare UL and DL reliability",
+        "Inspect UL SNR",
+        "Inspect UL MCS",
+        "Inspect UL resource utilization",
+        "Inspect UL buffer and traffic indicators",
+        "Determine whether impairment is truly directional"
+      ],
+
+      "can_conclude": [
+        "whether telemetry impairment is uplink-dominant"
+      ],
+
+      "cannot_conclude_alone": [
+        "uplink interference source",
+        "UE transmitter defect",
+        "radio hardware fault"
+      ]
+    },
+
+    {
+      "hypothesis_id": "downlink_specific_impairment",
+      "name": "Downlink-dominant impairment",
+      "description": "Measured degradation is materially stronger on the downlink than on the uplink.",
+
+      "aliases": [
+        "downlink issue",
+        "dl degradation",
+        "downlink impairment",
+        "download problem"
+      ],
+
+      "applicable_symptoms": [
+        "download degradation",
+        "downlink reliability degradation",
+        "asymmetric performance"
+      ],
+
+      "primary_concepts": [
+        "downlink_radio_reliability",
+        "downlink_link_adaptation",
+        "downlink_resource_utilization"
+      ],
+
+      "supporting_evidence": [
+        {
+          "pattern": "DL BLER is materially more impaired than UL BLER",
+          "strength": "strong",
+          "supports": "downlink-dominant reliability impairment"
+        },
+        {
+          "pattern": "DL MCS degradation aligns with elevated DL BLER",
+          "strength": "supporting",
+          "supports": "downlink link-condition or adaptation involvement"
+        },
+        {
+          "pattern": "DL resource pressure aligns with reported downlink degradation",
+          "strength": "supporting",
+          "supports": "downlink resource contribution"
+        }
+      ],
+
+      "contradicting_evidence": [
+        {
+          "pattern": "DL metrics remain healthy while UL metrics show dominant degradation",
+          "strength": "strong",
+          "contradicts": "downlink-dominant impairment"
+        }
+      ],
+
+      "investigation_sequence": [
+        "Compare DL and UL reliability",
+        "Inspect DL MCS",
+        "Inspect DL resource utilization",
+        "Inspect DL traffic indicators",
+        "Inspect RSRP",
+        "Determine whether impairment is truly directional"
+      ],
+
+      "data_limitations": [
+        "Current dataset has no direct downlink SINR/SNR metric"
+      ],
+
+      "can_conclude": [
+        "whether telemetry impairment is downlink-dominant"
+      ],
+
+      "cannot_conclude_alone": [
+        "downlink interference source",
+        "radio hardware fault",
+        "scheduler defect"
+      ]
+    },
+
+    {
+      "hypothesis_id": "temporal_or_bursty_impairment",
+      "name": "Temporal or bursty impairment",
+      "description": "The impairment occurs intermittently or in short periods rather than remaining continuously degraded.",
+
+      "aliases": [
+        "intermittent issue",
+        "bursty degradation",
+        "periodic degradation",
+        "spikes",
+        "flapping performance"
+      ],
+
+      "applicable_symptoms": [
+        "intermittent degradation",
+        "periodic stalls",
+        "performance recovers",
+        "sporadic errors"
+      ],
+
+      "primary_concepts": [
+        "time_series_behavior"
+      ],
+
+      "supporting_concepts": [
+        "radio_reliability",
+        "signal_quality",
+        "resource_utilization",
+        "link_adaptation",
+        "traffic_load"
+      ],
+
+      "supporting_evidence": [
+        {
+          "pattern": "Metric degradation appears in repeated time-localized periods separated by recovery",
+          "strength": "strong",
+          "supports": "intermittent impairment"
+        },
+        {
+          "pattern": "BLER, SNR, MCS, resource, or traffic changes align within the same degraded periods",
+          "strength": "strong",
+          "supports": "candidate mechanism associated with intermittent behavior"
+        }
+      ],
+
+      "contradicting_evidence": [
+        {
+          "pattern": "The relevant metric remains continuously degraded with no meaningful recovery",
+          "strength": "supporting",
+          "contradicts": "bursty characterization"
+        }
+      ],
+
+      "investigation_sequence": [
+        "Use event timestamps or sample order",
+        "Identify degraded periods",
+        "Measure frequency and duration of degradation",
+        "Compare candidate metrics within degraded versus recovered periods",
+        "Avoid inferring intermittency from average/min/max summaries"
+      ],
+
+      "can_conclude": [
+        "whether measured impairment is intermittent or persistent",
+        "which measured variables align with degraded periods"
+      ],
+
+      "cannot_conclude_alone": [
+        "cause of periodicity",
+        "alarm-driven mechanism",
+        "shared infrastructure event"
+      ],
+
+      "cross_domain_escalation": [
+        {
+          "domain": "alarms",
+          "when": "periodic telemetry degradation may align with repeated operational events",
+          "question": "Do alarm activation/clear cycles align with the degraded periods?"
+        }
+      ]
+    },
+
+    {
+      "hypothesis_id": "uplink_buffer_or_queue_pressure",
+      "name": "Uplink buffer or queue pressure",
+      "description": "Uplink demand accumulates in the available buffer indicator, potentially contributing to delayed or constrained uplink delivery.",
+
+      "aliases": [
+        "ul buffer issue",
+        "uplink queue",
+        "buffer pressure",
+        "queue buildup",
+        "uplink backlog"
+      ],
+
+      "applicable_symptoms": [
+        "upload slowdown",
+        "uplink delay",
+        "uplink throughput degradation",
+        "performance degradation under load"
+      ],
+
+      "primary_concepts": [
+        "buffer_pressure",
+        "uplink_resource_utilization",
+        "uplink_traffic_load"
+      ],
+
+      "supporting_evidence": [
+        {
+          "pattern": "Estimated UL buffer increases during affected periods",
+          "strength": "supporting",
+          "supports": "uplink backlog or buffer pressure"
+        },
+        {
+          "pattern": "Buffer growth aligns with elevated UL resource utilization",
+          "strength": "strong",
+          "supports": "resource-demand-related uplink pressure"
+        },
+        {
+          "pattern": "Buffer growth aligns with reported uplink degradation",
+          "strength": "strong",
+          "supports": "association between backlog and service impact"
+        }
+      ],
+
+      "contradicting_evidence": [
+        {
+          "pattern": "Estimated UL buffer remains consistently low during uplink degradation",
+          "strength": "supporting",
+          "contradicts": "buffer pressure as the dominant measured mechanism"
+        }
+      ],
+
+      "investigation_sequence": [
+        "Inspect Estimated_UL_Buffer behavior",
+        "Compare buffer behavior with UL PRB utilization",
+        "Compare with UL packet and byte activity",
+        "Compare with UL BLER and UL MCS",
+        "Assess temporal alignment with degradation"
+      ],
+
+      "can_conclude": [
+        "whether the available buffer indicator shows uplink pressure"
+      ],
+
+      "cannot_conclude_alone": [
+        "scheduler defect",
+        "application-side buffering",
+        "transport bottleneck"
+      ]
+    },
+
+    {
+      "hypothesis_id": "mobility_associated_degradation",
+      "name": "Mobility-associated degradation",
+      "description": "Measured degradation is associated with mobility context or changing radio conditions, without assuming a handover failure.",
+
+      "aliases": [
+        "mobility issue",
+        "moving user degradation",
+        "handover related",
+        "mobility degradation"
+      ],
+
+      "applicable_symptoms": [
+        "degradation while moving",
+        "intermittent radio degradation",
+        "changing signal conditions"
+      ],
+
+      "primary_concepts": [
+        "mobility_context",
+        "signal_strength",
+        "signal_quality",
+        "radio_reliability",
+        "link_adaptation"
+      ],
+
+      "supporting_evidence": [
+        {
+          "pattern": "The affected window is associated with mobility and radio metrics vary materially over time",
+          "strength": "supporting",
+          "supports": "mobility-associated radio variation"
+        },
+        {
+          "pattern": "Signal/reliability/link-adaptation degradation aligns with changing radio conditions",
+          "strength": "supporting",
+          "supports": "mobility-associated degradation"
+        }
+      ],
+
+      "contradicting_evidence": [
+        {
+          "pattern": "The window is stationary and relevant radio metrics remain stable",
+          "strength": "supporting",
+          "contradicts": "mobility-associated explanation"
+        }
+      ],
+
+      "investigation_sequence": [
+        "Inspect mobility metadata",
+        "Inspect temporal RSRP behavior",
+        "Inspect BLER and MCS behavior",
+        "Inspect available signal-quality behavior",
+        "Determine whether the current dataset contains enough evidence to investigate handover mechanisms"
+      ],
+
+      "can_conclude": [
+        "whether degradation is associated with mobility context and changing telemetry"
+      ],
+
+      "cannot_conclude_alone": [
+        "handover failure",
+        "handover configuration defect",
+        "neighbor relation issue"
+      ],
+
+      "data_limitations": [
+        "Current telemetry schema contains mobility context but no explicit handover event/counter fields"
+      ],
+
+      "cross_domain_escalation": [
+        {
+          "domain": "alarms",
+          "when": "handover or mobility failure is suspected but telemetry lacks event-level evidence",
+          "question": "Are there mobility, handover, radio-link, or related events during the affected period?"
+        },
+        {
+          "domain": "topology",
+          "when": "serving/neighbor relationships are needed",
+          "question": "What serving and neighboring network relationships are relevant to the affected entity?"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "version": "1.0",
+
+  "evidence_levels": {
+    "confirmed": {
+      "description": "Directly demonstrated by available evidence.",
+      "allowed_language": [
+        "confirmed",
+        "demonstrates",
+        "establishes"
+      ]
+    },
+
+    "supported": {
+      "description": "Multiple observations are consistent with the hypothesis but do not prove it.",
+      "allowed_language": [
+        "supported",
+        "consistent with",
+        "evidence suggests"
+      ]
+    },
+
+    "possible": {
+      "description": "Plausible but insufficiently evidenced.",
+      "allowed_language": [
+        "possible",
+        "remains plausible",
+        "cannot be ruled out"
+      ]
+    },
+
+    "contradicted": {
+      "description": "Available evidence materially conflicts with the hypothesis.",
+      "allowed_language": [
+        "contradicted",
+        "not supported by available evidence",
+        "unlikely based on available evidence"
+      ]
+    },
+
+    "unassessable": {
+      "description": "Required evidence is unavailable.",
+      "allowed_language": [
+        "cannot be determined",
+        "insufficient evidence",
+        "not observable from available data"
+      ]
+    }
+  },
+
+  "reasoning_rules": [
+    {
+      "rule_id": "NO_CAUSE_FROM_CORRELATION",
+      "rule": "Correlation or temporal alignment alone must not be described as proof of causation."
+    },
+    {
+      "rule_id": "NO_PROXY_AS_DIRECT_EVIDENCE",
+      "rule": "A proxy metric must not be presented as direct measurement unless the metric catalog explicitly defines that relationship."
+    },
+    {
+      "rule_id": "NO_MISSING_DATA_INFERENCE",
+      "rule": "Absence of a required metric must result in an evidence gap, not an inferred value."
+    },
+    {
+      "rule_id": "NO_ROOT_CAUSE_FROM_IMPAIRMENT",
+      "rule": "A confirmed impairment must not automatically be promoted to a physical root cause."
+    },
+    {
+      "rule_id": "CONTRADICTION_IS_EVIDENCE",
+      "rule": "Evidence that materially contradicts a hypothesis should be reported, not omitted."
+    },
+    {
+      "rule_id": "PREFER_DISCRIMINATING_EVIDENCE",
+      "rule": "Prefer evidence that distinguishes competing hypotheses over collecting additional unrelated metrics."
+    },
+    {
+      "rule_id": "STOP_WHEN_DOMAIN_EXHAUSTED",
+      "rule": "When remaining hypotheses require evidence outside the current domain, return the evidence gap and recommend the appropriate domain rather than continuing redundant investigation."
+    }
+  ]
+}
